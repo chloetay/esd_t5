@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Firebase Auth Login/Signup</title>
+		<!-- Vue 3 CDN -->
+		<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+	</head>
+	<body>
+		<div id="app">
+			<h2>Login or Sign Up</h2>
+			<!-- Feedback Message -->
+			<p v-if="message" :class="messageType">{{ message }}</p>
+			<!-- Email/Password Form -->
+			<form @submit.prevent="handleSubmit">
+				<div>
+					<label for="email">Email:</label><br />
+					<input
+						v-model="email"
+						id="email"
+						type="email"
+						placeholder="Enter email"
+						required
+					/>
+				</div>
+				<div>
+					<label for="password">Password:</label><br />
+					<input
+						v-model="password"
+						id="password"
+						type="password"
+						placeholder="Enter password"
+						required
+					/>
+				</div>
+				<button type="submit">Submit</button>
+			</form>
+		</div>
+
+		<!-- Import Firebase.js (ES Module) -->
+		<script type="module">
+			import {
+				auth,
+				db,
+				createUserWithEmailAndPassword,
+				signInWithEmailAndPassword,
+				doc,
+				setDoc,
+			} from "./firebase.js";
+
+			// Create Vue application
+			const app = Vue.createApp({
+				data() {
+					return {
+						email: "",
+						password: "",
+						message: "",
+						messageType: "", // 'success' or 'error' for styling feedback
+					};
+				},
+				methods: {
+					async handleSubmit() {
+						this.message = "";
+						this.messageType = "";
+
+						if (!this.email || !this.password) {
+							this.message = "Please enter both email and password.";
+							this.messageType = "error";
+							return;
+						}
+
+						console.log("Attempting login with:", this.email, this.password);
+
+						try {
+							const userCredential = await signInWithEmailAndPassword(
+								auth,
+								this.email,
+								this.password
+							);
+							const user = userCredential.user;
+
+							this.message = `Welcome back, ${user.email}!`;
+							this.messageType = "success";
+
+							setTimeout(() => {
+								window.location.href = "home.html";
+							}, 2000);
+						} catch (error) {
+							console.error("Firebase Auth Error:", error);
+
+							// Create an account if the user doesn't exist OR the error suggests an incorrect user
+							if (
+								error.code === "auth/user-not-found" ||
+								error.code === "auth/invalid-login-credentials"
+							) {
+								this.message = "No account found. Creating an account...";
+								this.messageType = "success";
+								setTimeout(() => this.createAccount(), 2000);
+							} else {
+								this.handleAuthError(error);
+							}
+						}
+					},
+					async createAccount() {
+						try {
+							console.log("Creating new account for:", this.email);
+
+							const userCredential = await createUserWithEmailAndPassword(
+								auth,
+								this.email,
+								this.password
+							);
+							const user = userCredential.user;
+
+							console.log("Account created successfully!", user);
+
+							// Store user in Firestore
+							await setDoc(doc(db, "users", user.uid), {
+								email: this.email,
+								createdAt: new Date().toISOString(),
+							});
+
+							console.log("User added to Firestore");
+
+							this.message = `Account created successfully! Welcome, ${user.email}.`;
+							this.messageType = "success";
+
+							// Automatically sign in the user after account creation
+							setTimeout(() => {
+								window.location.href = "home.html";
+							}, 2000);
+						} catch (error) {
+							console.error("Full error details:", error);
+							this.handleAuthError(error);
+						}
+					},
+				},
+			});
+
+			// Mount Vue app
+			app.mount("#app");
+		</script>
+
+		<style>
+			.success {
+				color: green;
+			}
+			.error {
+				color: red;
+			}
+		</style>
+	</body>
+</html>
