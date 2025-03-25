@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <section v-if="loading">
+        <h2>Loading quiz, please wait...</h2>
+      </section>
+
+      <section v-if="error">
+        <h2>{{ error }}</h2>
+        <button @click="goBack">Back to Home</button>
+      </section>
+
+      <section v-if="hasQuestions() && !error && !loading">
+        <h1>
+          Question {{ currentQuestionIndex + 1 }} / {{ questions.length }}
+        </h1>
+        <h2>{{ questions[currentQuestionIndex].question }}</h2>
+
+        <div>
+          <label
+            v-for="(option, key) in questions[currentQuestionIndex].options"
+            :key="key"
+          >
+            <input type="radio" :value="key" v-model="selectedOption" />
+            {{ option }}
+          </label>
+        </div>
+
+        <button
+          v-if="selectedOption !== null && !submitted"
+          @click="submitOption"
+        >
+          Submit Answer
+        </button>
+      </section>
+
+      <section v-if="submitted">
+        <div v-if="isCorrect">
+          <h4>You are Correct! Keep up the good work!</h4>
+        </div>
+        <div v-else>
+          <h4>
+            Oh no! The correct answer is {{
+            questions[currentQuestionIndex].correctAnswer }}.
+          </h4>
+        </div>
+
+        <button
+          v-if="currentQuestionIndex === questions.length - 1"
+          @click="finishQuiz"
+        >
+          Finish Quiz
+        </button>
+        <button v-else @click="nextQuestion">Next Question</button>
+      </section>
+    </div>
+
+    <script>
+      new Vue({
+        el: "#app",
+        data: {
+          quizId: new URLSearchParams(window.location.search).get("quizId"),
+          questions: [],
+          currentQuestionIndex: 0,
+          selectedOption: null,
+          submitted: false,
+          isCorrect: false,
+          score: 0,
+          loading: true,
+          error: null,
+        },
+        mounted() {
+          this.fetchQuiz();
+        },
+        methods: {
+          fetchQuiz() {
+            if (!this.quizId) {
+              this.error = "Quiz ID not specified.";
+              this.loading = false;
+              return;
+            }
+            axios
+              .get(`http://localhost:8000/quiz/${this.quizId}`)
+              .then((response) => {
+                this.questions = response.data.questions.map((question) => ({
+                  question: question.question,
+                  options: question.options,
+                  correctAnswer: question.correctAnswer,
+                }));
+                this.loading = false;
+              })
+              .catch((error) => {
+                if (error.response && error.response.status === 404) {
+                  this.error = "Quiz ID not found.";
+                } else {
+                  this.error = "Failed to load the quiz. Please try again.";
+                }
+                this.loading = false;
+              });
+          },
+          hasQuestions() {
+            return this.questions.length > 0;
+          },
+          submitOption() {
+            if (this.selectedOption) {
+              this.isCorrect =
+                this.selectedOption ===
+                this.questions[this.currentQuestionIndex].correctAnswer;
+              this.submitted = true;
+              this.score += this.isCorrect * 1;
+            }
+          },
+          nextQuestion() {
+            this.submitted = false;
+            this.selectedOption = null;
+            if (this.currentQuestionIndex < this.questions.length - 1) {
+              this.currentQuestionIndex++;
+            }
+          },
+          finishQuiz() {
+            alert(`Quiz Completed! Your score is ${this.score}.`);
+            this.goBack();
+          },
+          goBack() {
+            window.location.href = "index.html";
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

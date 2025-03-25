@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  quiz-backend:
+    build:
+      context: .
+      dockerfile: quiz.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - db_password=NewSecurePassword123  
+    restart: always

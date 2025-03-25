@@ -1,0 +1,5 @@
+flask
+pymongo
+pydantic
+flask-cors
+python-dotenv
