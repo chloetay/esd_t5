@@ -1,0 +1,8 @@
+services:
+  course:
+    build: .
+    container_name: course
+    ports:
+      - "5000:5000"
+    environment:
+      - dbURL=mysql+mysqlconnector://is213@host.docker.internal:8889/course
