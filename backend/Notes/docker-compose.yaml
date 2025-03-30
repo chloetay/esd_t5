@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  php-notes:
+    build:
+      context: .
+      dockerfile: notes.dockerfile
+    ports:
+      - "8003:8003"
+    volumes:
+      - .:/var/www/html
+    networks:
+      - notes-net
+
+networks:
+  notes-net:
+  
