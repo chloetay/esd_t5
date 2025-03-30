@@ -1,18 +1,20 @@
-from flask import Flask, request, jsonify, send_from_directory
-import os
+from flask import Flask, request, jsonify
 import requests
+from flask_cors import CORS
 
 app = Flask(__name__)
 
-# These URLs work inside Docker Compose
+CORS(app, resources={r"/*": {
+    "origins": "http://localhost:8080",
+    "methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type"]
+}}, supports_credentials=True)
+
+# Microservice URLs
 COURSE_URL = "http://course:5000/course"
 ENROLL_LOG_URL = "http://enroll-log:3000/enroll"
 WALLET_GET_URL = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/GetWallet"
 WALLET_UPDATE_URL = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/UpdateBalance"
-
-@app.route("/")
-def serve_enroll_html():
-    return send_from_directory(os.path.dirname(__file__), "enroll.html")
 
 @app.route("/enroll", methods=["POST"])
 def enroll():
@@ -20,40 +22,29 @@ def enroll():
     user_id = data.get("userId")
     course_id = data.get("courseId")
     wallet_id = data.get("walletId")
-    password = data.get("walletPassword")
+    password = data.get("walletPassword")  # reused from login
 
     if not user_id or not course_id or not wallet_id or not password:
         return jsonify({"error": "Missing required fields"}), 400
 
     try:
-        # Get course info
+        # 1. Get course info
         course_resp = requests.get(f"{COURSE_URL}/{course_id}")
         course_resp.raise_for_status()
-        course_data = course_resp.json()["data"]
-        course_name = course_data["courseName"]
-        course_price = 20
+        course_data = course_resp.json().get("data", {})
+        course_name = course_data.get("courseName", "Unknown Course")
+        course_price = course_data.get("courseCost", 20.00)  # fallback price
 
-        # Get wallet balance
-        wallet_resp = requests.post(WALLET_GET_URL, json={
-            "WalletId": wallet_id,
-            "Password": password
-        })
-        wallet_resp.raise_for_status()
-        balance = wallet_resp.json()["Balance"]
-
-        if balance < course_price:
-            return jsonify({"error": "Insufficient wallet balance"}), 400
-
-        # Deduct balance
+        # 2. Deduct balance (assumes always successful)
         deduct_resp = requests.put(WALLET_UPDATE_URL, json={
             "ChangeAmount": -course_price,
             "WalletId": wallet_id,
             "Password": password
         })
         deduct_resp.raise_for_status()
-        new_balance = deduct_resp.json()["NewBalance"]
+        new_balance = deduct_resp.json().get("NewBalance")
 
-        # Log enrollment
+        # 3. Log enrollment
         enroll_log_resp = requests.post(ENROLL_LOG_URL, json={
             "userId": user_id,
             "courseId": course_id
@@ -61,6 +52,7 @@ def enroll():
         enroll_log_resp.raise_for_status()
         log_data = enroll_log_resp.json()
 
+        # 4. Return unified result
         return jsonify({
             "message": "Enrollment successful!",
             "course": course_name,
