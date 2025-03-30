@@ -115,13 +115,21 @@
 
 							console.log("Account created successfully!", user);
 
-							// Store user in Firestore
+							const walletId = Math.floor(
+								1000000000 + Math.random() * 9000000000
+							).toString();
+
+							// Store user in Firestore along with wallet info
 							await setDoc(doc(db, "users", user.uid), {
 								email: this.email,
 								createdAt: new Date().toISOString(),
+								wallet: {
+									id: walletId,
+									balance: 100,
+								},
 							});
 
-							console.log("User added to Firestore");
+							console.log("User and wallet added to Firestore");
 
 							this.message = `Account created successfully! Welcome, ${user.email}.`;
 							this.messageType = "success";
