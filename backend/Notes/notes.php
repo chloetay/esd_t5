@@ -31,7 +31,7 @@ if (preg_match('/\/notes\.php\/notes_(\d+)/', $request_uri, $matches)) {
     $notes_id = intval($matches[1]);
 } else {
     http_response_code(400);
-    echo "Invalid URL format. Use /notes.php/notes_<id> or /notes.php/list";
+    echo "Invalid URL format. Use /notes.php/<notesId> or /notes.php/list";
     exit;
 }
 
@@ -39,12 +39,12 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $stmt = $pdo->prepare("SELECT file_name FROM notes WHERE notes_id = ?");
-    $stmt->execute([$notes_id]);
+    $stmt = $pdo->prepare("SELECT fileName FROM notes WHERE notesId = ?");
+    $stmt->execute([$notesId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row) {
-        $filename = basename($row['file_name']);
+        $filename = basename($row['fileName']);
         $filepath = __DIR__ . "/notes/" . $filename;
 
         if (file_exists($filepath)) {
@@ -65,7 +65,7 @@ try {
         }
     } else {
         http_response_code(404);
-        echo "No file found for notes_id $notes_id.";
+        echo "No file found for notesId $notesId.";
     }
 } catch (PDOException $e) {
     http_response_code(500);
