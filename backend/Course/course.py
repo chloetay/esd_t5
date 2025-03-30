@@ -1,26 +1,28 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from os import environ
+from flask_cors import CORS
+import os
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = environ.get('dbURL')
+CORS(app)
+
+# Get the DB URL from environment variable
+dbURL = os.environ.get('dbURL')
+
+# SQLAlchemy config
+app.config['SQLALCHEMY_DATABASE_URI'] = dbURL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
 
+# Course Model
 class Course(db.Model):
     __tablename__ = 'course'
 
-    courseID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    courseName = db.Column(db.String(100), nullable=False)
-    courseCategory = db.Column(db.String(100), nullable=False)
-    numberOfLessons = db.Column(db.Integer, nullable=False)
-
-    def __init__(self, courseName, courseCategory, numberOfLessons):
-        self.courseName = courseName
-        self.courseCategory = courseCategory
-        self.numberOfLessons = numberOfLessons
+    courseID = db.Column(db.Integer, primary_key=True)
+    courseName = db.Column(db.String(255), nullable=False)
+    courseCategory = db.Column(db.String(100))
+    numberOfLessons = db.Column(db.Integer)
 
     def json(self):
         return {
@@ -30,67 +32,32 @@ class Course(db.Model):
             "numberOfLessons": self.numberOfLessons
         }
 
+# GET all courses
 @app.route("/course")
-def get_all():
-    courselist = db.session.scalars(db.select(Course)).all()
-    if courselist:
-        return jsonify(
-            {
-                "code": 200,
-                "data": {
-                    "courses": [course.json() for course in courselist]
-                }
-            }
-        )
-    return jsonify(
-        {
-            "code": 404,
-            "message": "There are no courses."
+def get_all_courses():
+    courses = Course.query.all()
+    return jsonify({
+        "code": 200,
+        "data": {
+            "courses": [course.json() for course in courses]
         }
-    ), 404
+    }), 200
 
-@app.route("/course/<int:courseID>")
-def find_by_id(courseID):
-    course = db.session.scalar(
-        db.select(Course).filter_by(courseID=courseID)
-    )
-
+# GET course by ID
+@app.route("/course/<int:course_id>")
+def get_course_by_id(course_id):
+    course = Course.query.filter_by(courseID=course_id).first()
     if course:
-        return jsonify(
-            {
-                "code": 200,
-                "data": course.json()
-            }
-        )
-    return jsonify(
-        {
-            "code": 404,
-            "message": "Course not found."
-        }
-    ), 404
-
-@app.route("/course", methods=['POST'])
-def create_course():
-    data = request.get_json()
-    course = Course(**data)
-
-    try:
-        db.session.add(course)
-        db.session.commit()
-    except:
-        return jsonify(
-            {
-                "code": 500,
-                "message": "An error occurred creating the course."
-            }
-        ), 500
-
-    return jsonify(
-        {
-            "code": 201,
+        return jsonify({
+            "code": 200,
             "data": course.json()
-        }
-    ), 201
+        }), 200
+    else:
+        return jsonify({
+            "code": 404,
+            "message": "Course not found"
+        }), 404
 
-if __name__ == '__main__':
+# Run server
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)

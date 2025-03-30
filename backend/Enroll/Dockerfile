@@ -1,17 +1,9 @@
-# Use a lightweight Python image
-FROM python:3.10-slim
+FROM python:3.10
 
-# Set working directory
 WORKDIR /app
+COPY . /app
 
-# Copy the enroll script
-COPY enroll.py .
+# ✅ Install requirements (this line is key)
+RUN pip install -r requirements.txt
 
-# Install dependencies
-RUN pip install flask requests
-
-# Expose the port the app runs on
-EXPOSE 5002
-
-# Start the app
 CMD ["python", "enroll.py"]
