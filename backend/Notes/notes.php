@@ -1,21 +1,23 @@
 <?php
+header("Access-Control-Allow-Origin: *");
 $request_uri = $_SERVER['REQUEST_URI'];
 
 // Database config
 $host = 'host.docker.internal';
-$db = 'notes_db';
+$db = 'esd_project';
 $user = 'root';
 $pass = '';
 
-// Handle: /notes.php/list — return JSON of all notes_id
+// Handle: /notes.php/list — return JSON of all notesId
 if (preg_match('/\/notes\.php\/list/', $request_uri)) {
     header('Content-Type: application/json');
+
 
     try {
         $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $stmt = $pdo->query("SELECT notes_id FROM notes ORDER BY notes_id ASC");
+        $stmt = $pdo->query("SELECT notesId FROM notes ORDER BY notesId ASC");
         $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode($notes);
@@ -27,8 +29,8 @@ if (preg_match('/\/notes\.php\/list/', $request_uri)) {
 }
 
 // Handle: /notes.php/notes_<id> — download the corresponding PDF
-if (preg_match('/\/notes\.php\/notes_(\d+)/', $request_uri, $matches)) {
-    $notes_id = intval($matches[1]);
+if (preg_match('/\/notes\.php\/(notes_\w+)/', $request_uri, $matches)) {
+    $notesId = $matches[1];
 } else {
     http_response_code(400);
     echo "Invalid URL format. Use /notes.php/<notesId> or /notes.php/list";
@@ -45,12 +47,12 @@ try {
 
     if ($row) {
         $filename = basename($row['fileName']);
-        $filepath = __DIR__ . "/notes/" . $filename;
+        $filepath = __DIR__ . "/notes_compiled/" . $filename;
 
         if (file_exists($filepath)) {
             header('Content-Description: File Transfer');
             header('Content-Type: application/pdf');
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Disposition: inline; filename="' . $filename . '"');
             header('Expires: 0');
             header('Cache-Control: must-revalidate');
             header('Pragma: public');

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Available Notes</title>
+  </head>
+  <body>
+    <h2>Download Notes</h2>
+    <ul id="notes-list"></ul>
+
+    <script>
+      // Replace this with the actual backend port & endpoint
+      const BASE_URL = "http://localhost:8003/notes.php";
+
+      fetch(`${BASE_URL}/list`)
+        .then((response) => response.json())
+        .then((data) => {
+          const ul = document.getElementById("notes-list");
+          data.forEach((note) => {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = `${BASE_URL}/${note.notesId}`;
+            a.textContent = `Download ${note.notesId}`;
+            a.download = ""; // optional
+            li.appendChild(a);
+            ul.appendChild(li);
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching notes:", error);
+          const ul = document.getElementById("notes-list");
+          ul.innerHTML =
+            "<li>Error loading notes. Please try again later.</li>";
+        });
+    </script>
+  </body>
+</html>
