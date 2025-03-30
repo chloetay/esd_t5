@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Courses</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .card h3 {
+      margin-top: 0;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h2>Courses</h2>
+
+    <!-- Feedback -->
+    <p v-if="message" :class="messageType">{{ message }}</p>
+
+    <!-- Courses Grid -->
+    <div class="grid">
+      <div class="card" v-for="course in courses" :key="course.courseID">
+        <h3>{{ course.courseName }}</h3>
+        <p><strong>Category:</strong> {{ course.courseCategory }}</p>
+        <p><strong>Lessons:</strong> {{ course.numberOfLessons }}</p>
+        <button @click="enroll(course.courseID)">Enroll</button>
+      </div>
+    </div>
+
+    <!-- Enrollment Result -->
+    <div v-if="enrollResponse" style="margin-top: 20px;">
+      <h3>Enrollment Success</h3>
+      <p><strong>Course:</strong> {{ enrollResponse.course }}</p>
+      <p><strong>Wallet Balance:</strong> ${{ enrollResponse.wallet_balance }}</p>
+      <p><strong>Log ID:</strong> {{ enrollResponse.log_id }}</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "../firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    import { getDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+    const app = Vue.createApp({
+      data() {
+        return {
+          userId: "",
+          walletId: "",
+          walletPassword: "",
+          courses: [],
+          message: "",
+          messageType: "",
+          enrollResponse: null,
+        };
+      },
+      mounted() {
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            this.userId = user.uid;
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const wallet = userSnap.data().wallet;
+              this.walletId = wallet.id;
+              this.walletPassword = localStorage.getItem("walletPassword") || "";
+              this.loadCourses();
+            } else {
+              this.message = "No wallet data found for this user.";
+              this.messageType = "error";
+            }
+          } else {
+            this.message = "Please log in again.";
+            this.messageType = "error";
+            window.location.href = "../../log in page/login.html";
+          }
+        });
+      },
+      methods: {
+        async loadCourses() {
+          try {
+            const res = await fetch("http://localhost:5000/course");
+            const data = await res.json();
+            this.courses = data.data.courses;
+          } catch (err) {
+            this.message = "Failed to load courses.";
+            this.messageType = "error";
+          }
+        },
+        async enroll(courseId) {
+          this.message = "";
+          this.enrollResponse = null;
+
+          if (!this.userId || !this.walletId || !this.walletPassword) {
+            this.message = "User credentials missing. Please log in again.";
+            this.messageType = "error";
+            return;
+          }
+
+          try {
+            const res = await fetch("http://localhost:5002/enroll", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                userId: this.userId,
+                walletId: this.walletId,
+                walletPassword: this.walletPassword,
+                courseId
+              })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              this.enrollResponse = data;
+              this.message = "Enrolled successfully!";
+              this.messageType = "success";
+            } else {
+              this.message = "Enroll failed: " + (data.error || "Unknown error");
+              this.messageType = "error";
+            }
+          } catch (err) {
+            console.error(err);
+            this.message = "Something went wrong.";
+            this.messageType = "error";
+          }
+        }
+      }
+    });
+
+    app.mount("#app");
+  </script>
+</body>
+</html>

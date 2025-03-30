@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Firebase Auth Login/Signup</title>
+		<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+	</head>
+	<body>
+		<div id="app">
+			<h2>Login or Sign Up</h2>
+			<p v-if="message" :class="messageType">{{ message }}</p>
+			<form @submit.prevent="handleSubmit">
+				<div>
+					<label for="email">Email:</label><br />
+					<input v-model="email" id="email" type="email" required />
+				</div>
+				<div>
+					<label for="password">Password:</label><br />
+					<input v-model="password" id="password" type="password" required />
+				</div>
+				<button type="submit">Submit</button>
+			</form>
+		</div>
+
+		<script type="module">
+			import {
+				auth,
+				db,
+				createUserWithEmailAndPassword,
+				signInWithEmailAndPassword,
+				doc,
+				setDoc,
+			} from "./firebase.js";
+
+			const app = Vue.createApp({
+				data() {
+					return {
+						email: "",
+						password: "",
+						message: "",
+						messageType: "",
+					};
+				},
+				methods: {
+					async handleSubmit() {
+						this.message = "";
+						this.messageType = "";
+
+						if (!this.email || !this.password) {
+							this.message = "Please enter both email and password.";
+							this.messageType = "error";
+							return;
+						}
+
+						try {
+							const userCredential = await signInWithEmailAndPassword(
+								auth,
+								this.email,
+								this.password
+							);
+							const user = userCredential.user;
+
+							localStorage.setItem("userId", user.uid);
+							localStorage.setItem("walletPassword", this.password);
+
+							this.message = `Welcome back, ${user.email}!`;
+							this.messageType = "success";
+
+							setTimeout(() => {
+								window.location.href = "../backend/Enroll/enroll.html";
+							}, 2000);
+						} catch (error) {
+							if (
+								error.code === "auth/user-not-found" ||
+								error.code === "auth/invalid-login-credentials"
+							) {
+								this.message = "No account found. Creating an account...";
+								this.messageType = "success";
+								setTimeout(() => this.createAccount(), 2000);
+							} else {
+								this.message = error.message;
+								this.messageType = "error";
+							}
+						}
+					},
+
+					async createAccount() {
+						try {
+							const userCredential = await createUserWithEmailAndPassword(
+								auth,
+								this.email,
+								this.password
+							);
+							const user = userCredential.user;
+
+							const walletApiUrl =
+								"https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/CreateWallet";
+
+							const walletResponse = await fetch(walletApiUrl, {
+								method: "POST",
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify({
+									UID: user.uid,
+									Password: this.password,
+									Balance: 100,
+								}),
+							});
+
+							if (!walletResponse.ok) {
+								throw new Error("Failed to create wallet");
+							}
+
+							const walletData = await walletResponse.json();
+
+							await setDoc(doc(db, "users", user.uid), {
+								email: this.email,
+								createdAt: new Date().toISOString(),
+								wallet: {
+									id: walletData.WalletId,
+									balance: walletData.Balance,
+									uid: walletData.UID,
+								},
+							});
+
+							localStorage.setItem("userId", user.uid);
+							localStorage.setItem("walletPassword", this.password);
+							localStorage.setItem("walletId", walletData.WalletId);
+
+							this.message = `Account created successfully! Welcome, ${user.email}.`;
+							this.messageType = "success";
+
+							setTimeout(() => {
+								window.location.href = "../backend/Enroll/enroll.html";
+							}, 2000);
+						} catch (error) {
+							this.message = "Account creation failed: " + error.message;
+							this.messageType = "error";
+						}
+					},
+				},
+			});
+
+			app.mount("#app");
+		</script>
+
+		<style>
+			.success {
+				color: green;
+			}
+			.error {
+				color: red;
+			}
+		</style>
+	</body>
+</html>
