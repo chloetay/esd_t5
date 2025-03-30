@@ -1,0 +1,73 @@
+services:
+  course:
+    build:
+      context: ./backend/Course
+      dockerfile: Dockerfile
+    container_name: course
+    ports:
+      - "5000:5000"
+    environment:
+      - dbURL=mysql+mysqlconnector://is213:password@mysql:3306/course
+    depends_on:
+      - mysql
+
+  enroll-log:
+    build:
+      context: ./backend/EnrollLog
+      dockerfile: Dockerfile
+    container_name: enroll-log
+    ports:
+      - "3000:3000"
+    depends_on:
+      - pgdb
+      - rabbitmq
+    environment:
+      - DB_HOST=pgdb
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=Password123!
+      - DB_NAME=enrolllog
+      - RABBITMQ_URL=amqp://rabbitmq
+
+  enroll:
+    build:
+      context: ./backend/Enroll
+      dockerfile: Dockerfile
+    container_name: enroll
+    ports:
+      - "5002:5002"
+    depends_on:
+      - course
+      - enroll-log
+
+  pgdb:
+    image: postgres
+    container_name: pgdb
+    environment:
+      POSTGRES_DB: enrolllog
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123!
+    ports:
+      - "5432:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  mysql:
+    image: mysql:5.7
+    platform: linux/amd64
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: course
+      MYSQL_USER: is213
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+
+
