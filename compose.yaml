@@ -40,17 +40,17 @@ services:
       - course
       - enroll-log
 
-  quiz:
-    build:
-      context: ./backend/Quiz
-      dockerfile: quiz.Dockerfile
-    container_name: quiz
-    ports:
-      - "8000:8000"
-    environment:
-      - PYTHONUNBUFFERED=1
-      - db_password=NewSecurePassword123  
-    restart: always 
+  # quiz:
+  #   build:
+  #     context: ./backend/Quiz
+  #     dockerfile: quiz.Dockerfile
+  #   container_name: quiz
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - db_password=NewSecurePassword123  
+  #   restart: always 
 
   pgdb:
     image: postgres
@@ -81,5 +81,7 @@ services:
       MYSQL_PASSWORD: password
     ports:
       - "3307:3306"
+    volumes:
+    - ./backend/Course/db:/docker-entrypoint-initdb.d
 
 
