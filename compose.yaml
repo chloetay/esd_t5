@@ -11,6 +11,18 @@ services:
     depends_on:
       - mysql
 
+  course-logs:
+    build:
+      context: ./backend/CourseLogs
+      dockerfile: Dockerfile
+    container_name: course-logs
+    ports:
+      - "5003:5003"
+    depends_on:
+      - mysql
+    environment:
+      - dbURL=mysql+mysqlconnector://is213:password@mysql:3306/course
+
   enroll-log:
     build:
       context: ./backend/EnrollLog
@@ -83,5 +95,6 @@ services:
       - "3307:3306"
     volumes:
     - ./backend/Course/db:/docker-entrypoint-initdb.d
+    - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
 
 
