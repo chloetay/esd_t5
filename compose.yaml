@@ -98,3 +98,20 @@ services:
     - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
 
 
+  takecourse:
+    build:
+      context: ./takecourse
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - COURSE_SERVICE_URL=http://course:5000
+      - COURSE_LOGS_URL=http://course-logs:5003
+      - QUIZ_SERVICE_URL=http://quiz:8000
+      - FLASK_ENV=production
+    depends_on:
+      - course
+      - course-logs
+      - quiz
+    networks:
+      - learning-network

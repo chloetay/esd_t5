@@ -13,7 +13,7 @@ app = Flask(__name__)
 # Configuration
 COURSE_SERVICE_URL = os.getenv("COURSE_SERVICE_URL", "http://course:5000")
 COURSE_LOGS_URL = os.getenv("COURSE_LOGS_URL", "http://courselogs:5003")
-QUIZ_SERVICE_URL = os.getenv("QUIZ_SERVICE_URL", "http://quiz-service:8000")  # Changed to match quiz service
+QUIZ_SERVICE_URL = os.getenv("QUIZ_SERVICE_URL", "http://quiz-service:8000")
 
 # Caching
 course_cache = TTLCache(maxsize=100, ttl=3600)
