@@ -72,7 +72,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password123!
     ports:
-      - "5432:5432"
+      - "5433:5433"
 
   rabbitmq:
     image: rabbitmq:3-management
