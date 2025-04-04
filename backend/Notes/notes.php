@@ -17,7 +17,7 @@ if (preg_match('/\/notes\.php\/list/', $request_uri)) {
         $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        $stmt = $pdo->query("SELECT notesId FROM notes ORDER BY notesId ASC");
+        $stmt = $pdo->query("SELECT notesId, fileName FROM notes ORDER BY notesId ASC");
         $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         echo json_encode($notes);
@@ -57,7 +57,7 @@ try {
             header('Cache-Control: must-revalidate');
             header('Pragma: public');
             header('Content-Length: ' . filesize($filepath));
-            ob_clean();
+            if (ob_get_length()) ob_end_clean();
             flush();
             readfile($filepath);
             exit;
