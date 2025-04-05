@@ -82,6 +82,6 @@ services:
     ports:
       - "3307:3306"
     volumes:
-    - ./backend/Course/db:/docker-entrypoint-initdb.d
+      - ./backend/Course/db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
 
