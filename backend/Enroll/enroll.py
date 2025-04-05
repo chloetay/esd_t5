@@ -102,6 +102,53 @@ def enroll():
     except Exception as err:
         print("❌ Unexpected error:", err)
         return jsonify({"error": "Internal error", "details": str(err)}), 500
+    
+@app.route("/profile", methods=["POST"])
+def profile():
+    data = request.json
+    user_id = data.get("userId")
+    wallet_id = data.get("walletId")
+    password = data.get("walletPassword")
+
+    if not user_id or not wallet_id or not password:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        # 1. Get wallet balance
+        wallet_resp = requests.post(WALLET_GET_URL, json={
+            "WalletId": wallet_id,
+            "Password": password
+        })
+        wallet_resp.raise_for_status()
+        wallet_data = wallet_resp.json()
+        balance = wallet_data.get("Balance")
+
+        # 2. Get enrolled courses from enroll-log
+        enrollments_resp = requests.get("http://enroll-log:3000/enrollments")
+        enrollments_resp.raise_for_status()
+        all_enrollments = enrollments_resp.json()
+
+        enrolled_course_ids = [
+            e["course_id"] for e in all_enrollments if e["user_id"] == user_id
+        ]
+
+        # 3. Fetch all course info
+        course_resp = requests.get("http://course:5000/course")
+        course_resp.raise_for_status()
+        all_courses = course_resp.json()["data"]["courses"]
+
+        enrolled_courses = [
+            c for c in all_courses if c["courseId"] in enrolled_course_ids
+        ]
+
+        return jsonify({
+            "balance": balance,
+            "courses": enrolled_courses
+        })
+
+    except requests.RequestException as e:
+        return jsonify({"error": "Failed to load profile", "details": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=True)

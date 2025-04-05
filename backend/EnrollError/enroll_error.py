@@ -7,9 +7,9 @@ CORS(app)
 
 # Service URLs
 WALLET_GET_URL = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/GetWallet"
-ENROLL_LOG_URL = "http://enroll-log:3000/enrollments"
+ENROLL_LOG_URL = "http://enroll-log:3000/enroll"
 
-@app.route("/enroll-error", methods=["POST"])
+@app.route("/validate", methods=["POST"])
 def validate_enroll():
     data = request.json
     user_id = data.get("userId")
@@ -28,7 +28,7 @@ def validate_enroll():
         existing_enrollments = enroll_check.json()
 
         for record in existing_enrollments:
-            if record.get("user_id") == int(user_id) and record.get("course_id") == course_id:
+            if record.get("user_id") == user_id and record.get("course_id") == course_id:
                 return jsonify({"valid": False, "error": "Already enrolled in this course"}), 409
 
         # 2. Check wallet balance
@@ -55,4 +55,4 @@ def validate_enroll():
         return jsonify({"valid": False, "error": f"Internal error: {str(err)}"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5005, debug=True)
+    app.run(host="0.0.0.0", port=5004, debug=True)

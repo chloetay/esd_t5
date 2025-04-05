@@ -60,6 +60,7 @@ services:
     depends_on:
       - course
       - enroll-log
+      - enroll-error
     networks:
       - learning-network
 

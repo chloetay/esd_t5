@@ -90,6 +90,18 @@ app.post('/enroll', async (req, res) => {
     }
 });
 
+// ✅ New endpoint to list all enrollments
+app.get('/enroll', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM enrollments');
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('❌ Failed to fetch enrollments:', err);
+        res.status(500).json({ error: 'Database error' });
+    }
+});
+
+
 // ✅ Start the server
 app.listen(port, () => {
     console.log(`✅ EnrollLog service listening on port ${port}`);
