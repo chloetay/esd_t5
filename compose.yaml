@@ -1,3 +1,5 @@
+version: '3.9'
+
 services:
   course:
     build:
@@ -10,6 +12,8 @@ services:
       - dbURL=mysql+mysqlconnector://is213:password@mysql:3306/course
     depends_on:
       - mysql
+    networks:
+      - learning-network
 
   course-logs:
     build:
@@ -22,6 +26,8 @@ services:
       - mysql
     environment:
       - dbURL=mysql+mysqlconnector://is213:password@mysql:3306/course
+    networks:
+      - learning-network
 
   enroll-log:
     build:
@@ -40,6 +46,9 @@ services:
       - DB_PASSWORD=Password123!
       - DB_NAME=enrolllog
       - RABBITMQ_URL=amqp://rabbitmq
+    networks:
+      - learning-network
+    restart: always
 
   enroll:
     build:
@@ -51,6 +60,8 @@ services:
     depends_on:
       - course
       - enroll-log
+    networks:
+      - learning-network
 
   # quiz:
   #   build:
@@ -72,7 +83,9 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password123!
     ports:
-      - "5433:5433"
+      - "5433:5432"
+    networks:
+      - learning-network
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -80,6 +93,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - learning-network
 
   mysql:
     image: mysql:5.7
@@ -97,22 +112,26 @@ services:
       - ./backend/Course/db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./backend/Course/db:/docker-entrypoint-initdb.d
       - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
-
-
-  takecourse:
-    build:
-      context: ./takecourse
-      dockerfile: Dockerfile
-    ports:
-      - "5001:5001"
-    environment:
-      - COURSE_SERVICE_URL=http://course:5000
-      - COURSE_LOGS_URL=http://course-logs:5003
-      - QUIZ_SERVICE_URL=http://quiz:8000
-      - FLASK_ENV=production
-    depends_on:
-      - course
-      - course-logs
-      - quiz
     networks:
       - learning-network
+
+  # takecourse:
+  #   build:
+  #     context: ./takecourse
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5001:5001"
+  #   environment:
+  #     - COURSE_SERVICE_URL=http://course:5000
+  #     - COURSE_LOGS_URL=http://course-logs:5003
+  #     - QUIZ_SERVICE_URL=http://quiz:8000
+  #     - FLASK_ENV=production
+  #   depends_on:
+  #     - course
+  #     - course-logs
+  #     - quiz
+  #   networks:
+  #     - learning-network
+
+networks:
+  learning-network:
