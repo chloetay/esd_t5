@@ -6,4 +6,4 @@ COPY . /app
 # ✅ Install requirements (this line is key)
 RUN pip install -r requirements.txt
 
-CMD ["python", "enroll.py"]
+CMD ["python", "-u", "enroll.py"]

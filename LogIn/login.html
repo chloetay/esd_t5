@@ -3,23 +3,63 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Firebase Auth Login/Signup</title>
+		<title>Login / Signup</title>
 		<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+			rel="stylesheet"
+		/>
+		<style>
+			body {
+				font-family: "Inter", sans-serif;
+			}
+		</style>
 	</head>
-	<body>
-		<div id="app">
-			<h2>Login or Sign Up</h2>
-			<p v-if="message" :class="messageType">{{ message }}</p>
-			<form @submit.prevent="handleSubmit">
+	<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+		<div id="app" class="w-full max-w-md p-6 bg-white rounded-2xl shadow-lg">
+			<h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">
+				Login or Sign Up
+			</h2>
+
+			<p
+				v-if="message"
+				:class="{
+					'text-green-600 bg-green-100 border border-green-300': messageType === 'success',
+					'text-red-600 bg-red-100 border border-red-300': messageType === 'error'
+				}"
+				class="p-3 mb-4 text-sm rounded-lg"
+			>
+				{{ message }}
+			</p>
+
+			<form @submit.prevent="handleSubmit" class="space-y-5">
 				<div>
-					<label for="email">Email:</label><br />
-					<input v-model="email" id="email" type="email" required />
+					<label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+					<input
+						v-model="email"
+						id="email"
+						type="email"
+						required
+						class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+					/>
 				</div>
 				<div>
-					<label for="password">Password:</label><br />
-					<input v-model="password" id="password" type="password" required />
+					<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+					<input
+						v-model="password"
+						id="password"
+						type="password"
+						required
+						class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+					/>
 				</div>
-				<button type="submit">Submit</button>
+				<button
+					type="submit"
+					class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+				>
+					Submit
+				</button>
 			</form>
 		</div>
 
@@ -54,11 +94,7 @@
 						}
 
 						try {
-							const userCredential = await signInWithEmailAndPassword(
-								auth,
-								this.email,
-								this.password
-							);
+							const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
 							const user = userCredential.user;
 
 							localStorage.setItem("userId", user.uid);
@@ -71,10 +107,7 @@
 								window.location.href = "../backend/Enroll/enroll.html";
 							}, 2000);
 						} catch (error) {
-							if (
-								error.code === "auth/user-not-found" ||
-								error.code === "auth/invalid-login-credentials"
-							) {
+							if (error.code === "auth/user-not-found" || error.code === "auth/invalid-login-credentials") {
 								this.message = "No account found. Creating an account...";
 								this.messageType = "success";
 								setTimeout(() => this.createAccount(), 2000);
@@ -87,15 +120,10 @@
 
 					async createAccount() {
 						try {
-							const userCredential = await createUserWithEmailAndPassword(
-								auth,
-								this.email,
-								this.password
-							);
+							const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
 							const user = userCredential.user;
 
-							const walletApiUrl =
-								"https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/CreateWallet";
+							const walletApiUrl = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/CreateWallet";
 
 							const walletResponse = await fetch(walletApiUrl, {
 								method: "POST",
@@ -107,9 +135,7 @@
 								}),
 							});
 
-							if (!walletResponse.ok) {
-								throw new Error("Failed to create wallet");
-							}
+							if (!walletResponse.ok) throw new Error("Failed to create wallet");
 
 							const walletData = await walletResponse.json();
 
@@ -143,14 +169,5 @@
 
 			app.mount("#app");
 		</script>
-
-		<style>
-			.success {
-				color: green;
-			}
-			.error {
-				color: red;
-			}
-		</style>
 	</body>
 </html>
