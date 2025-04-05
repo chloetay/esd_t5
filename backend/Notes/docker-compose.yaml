@@ -4,7 +4,7 @@ services:
   php-notes:
     build:
       context: .
-      dockerfile: notes.dockerfile
+      dockerfile: notes.Dockerfile
     ports:
       - "8003:8003"
     volumes:

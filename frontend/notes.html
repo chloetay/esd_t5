@@ -8,19 +8,36 @@
     <ul id="notes-list"></ul>
 
     <script>
-      // Replace this with the actual backend port & endpoint
       const BASE_URL = "http://localhost:8003/notes.php";
 
       fetch(`${BASE_URL}/list`)
         .then((response) => response.json())
         .then((data) => {
+          console.log("Fetched notes from SQL DB:", data); // ✅ Log all entries
+
           const ul = document.getElementById("notes-list");
           data.forEach((note) => {
             const li = document.createElement("li");
             const a = document.createElement("a");
-            a.href = `${BASE_URL}/${note.notesId}`;
+
+            // Construct the URL
+            const downloadUrl = `${BASE_URL}/${note.notesId}`;
+            a.href = downloadUrl;
             a.textContent = `Download ${note.notesId}`;
-            a.download = ""; // optional
+
+            // Optional download attribute
+            a.download = "";
+
+            a.addEventListener("click", (event) => {
+              console.log(`\n--- Clicked Download Link ---`);
+              console.log("notesId:", note.notesId);
+              console.log("Download URL:", downloadUrl);
+              console.log("Expected filename format: {resolved by backend}");
+              console.log(
+                "PDF will be saved based on server headers (e.g. Content-Disposition)"
+              );
+            });
+
             li.appendChild(a);
             ul.appendChild(li);
           });

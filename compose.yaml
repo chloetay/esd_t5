@@ -11,6 +11,18 @@ services:
     depends_on:
       - mysql
 
+  course-logs:
+    build:
+      context: ./backend/CourseLogs
+      dockerfile: Dockerfile
+    container_name: course-logs
+    ports:
+      - "5003:5003"
+    depends_on:
+      - mysql
+    environment:
+      - dbURL=mysql+mysqlconnector://is213:password@mysql:3306/course
+
   enroll-log:
     build:
       context: ./backend/EnrollLog
@@ -60,7 +72,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password123!
     ports:
-      - "5432:5432"
+      - "5433:5433"
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -83,5 +95,24 @@ services:
       - "3307:3306"
     volumes:
       - ./backend/Course/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/Course/db:/docker-entrypoint-initdb.d
+      - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
 
 
+  takecourse:
+    build:
+      context: ./takecourse
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      - COURSE_SERVICE_URL=http://course:5000
+      - COURSE_LOGS_URL=http://course-logs:5003
+      - QUIZ_SERVICE_URL=http://quiz:8000
+      - FLASK_ENV=production
+    depends_on:
+      - course
+      - course-logs
+      - quiz
+    networks:
+      - learning-network
