@@ -73,8 +73,10 @@ services:
   #     - "8000:8000"
   #   environment:
   #     - PYTHONUNBUFFERED=1
-  #     - db_password=NewSecurePassword123  
-  #   restart: always 
+  #     - db_password=NewSecurePassword123
+  #   networks:
+  #     - learning-network
+
 
   pgdb:
     image: postgres

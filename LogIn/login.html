@@ -1,173 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Login / Signup</title>
-		<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
-		<script src="https://cdn.tailwindcss.com"></script>
-		<link
-			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
-			rel="stylesheet"
-		/>
-		<style>
-			body {
-				font-family: "Inter", sans-serif;
-			}
-		</style>
-	</head>
-	<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-		<div id="app" class="w-full max-w-md p-6 bg-white rounded-2xl shadow-lg">
-			<h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">
-				Login or Sign Up
-			</h2>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login / Signup</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div id="app" class="w-full max-w-md p-6 bg-white rounded-2xl shadow-lg">
+      <h2 class="text-2xl font-semibold text-center text-gray-800 mb-6">
+        Login or Sign Up
+      </h2>
 
-			<p
-				v-if="message"
-				:class="{
+      <p
+        v-if="message"
+        :class="{
 					'text-green-600 bg-green-100 border border-green-300': messageType === 'success',
 					'text-red-600 bg-red-100 border border-red-300': messageType === 'error'
 				}"
-				class="p-3 mb-4 text-sm rounded-lg"
-			>
-				{{ message }}
-			</p>
+        class="p-3 mb-4 text-sm rounded-lg"
+      >
+        {{ message }}
+      </p>
 
-			<form @submit.prevent="handleSubmit" class="space-y-5">
-				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-					<input
-						v-model="email"
-						id="email"
-						type="email"
-						required
-						class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
-				<div>
-					<label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-					<input
-						v-model="password"
-						id="password"
-						type="password"
-						required
-						class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
-				<button
-					type="submit"
-					class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-				>
-					Submit
-				</button>
-			</form>
-		</div>
+      <form @submit.prevent="handleSubmit" class="space-y-5">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700"
+            >Email</label
+          >
+          <input
+            v-model="email"
+            id="email"
+            type="email"
+            required
+            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700"
+            >Password</label
+          >
+          <input
+            v-model="password"
+            id="password"
+            type="password"
+            required
+            class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <button
+          type="submit"
+          class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          Submit
+        </button>
+      </form>
+    </div>
 
-		<script type="module">
-			import {
-				auth,
-				db,
-				createUserWithEmailAndPassword,
-				signInWithEmailAndPassword,
-				doc,
-				setDoc,
-			} from "./firebase.js";
+    <script type="module">
+      import {
+        auth,
+        db,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        doc,
+        setDoc,
+      } from "./firebase.js";
 
-			const app = Vue.createApp({
-				data() {
-					return {
-						email: "",
-						password: "",
-						message: "",
-						messageType: "",
-					};
-				},
-				methods: {
-					async handleSubmit() {
-						this.message = "";
-						this.messageType = "";
+      const app = Vue.createApp({
+        data() {
+          return {
+            email: "",
+            password: "",
+            message: "",
+            messageType: "",
+          };
+        },
+        methods: {
+          async handleSubmit() {
+            this.message = "";
+            this.messageType = "";
 
-						if (!this.email || !this.password) {
-							this.message = "Please enter both email and password.";
-							this.messageType = "error";
-							return;
-						}
+            if (!this.email || !this.password) {
+              this.message = "Please enter both email and password.";
+              this.messageType = "error";
+              return;
+            }
 
-						try {
-							const userCredential = await signInWithEmailAndPassword(auth, this.email, this.password);
-							const user = userCredential.user;
+            try {
+              const userCredential = await signInWithEmailAndPassword(
+                auth,
+                this.email,
+                this.password
+              );
+              const user = userCredential.user;
 
-							localStorage.setItem("userId", user.uid);
-							localStorage.setItem("walletPassword", this.password);
+              localStorage.setItem("userId", user.uid);
+              localStorage.setItem("walletPassword", this.password);
 
-							this.message = `Welcome back, ${user.email}!`;
-							this.messageType = "success";
+              this.message = `Welcome back, ${user.email}!`;
+              this.messageType = "success";
 
-							setTimeout(() => {
-								window.location.href = "../backend/Enroll/enroll.html";
-							}, 2000);
-						} catch (error) {
-							if (error.code === "auth/user-not-found" || error.code === "auth/invalid-login-credentials") {
-								this.message = "No account found. Creating an account...";
-								this.messageType = "success";
-								setTimeout(() => this.createAccount(), 2000);
-							} else {
-								this.message = error.message;
-								this.messageType = "error";
-							}
-						}
-					},
+              setTimeout(() => {
+                window.location.href = "../backend/Enroll/enroll.html";
+              }, 2000);
+            } catch (error) {
+              if (
+                error.code === "auth/user-not-found" ||
+                error.code === "auth/invalid-login-credentials"
+              ) {
+                this.message = "No account found. Creating an account...";
+                this.messageType = "success";
+                setTimeout(() => this.createAccount(), 2000);
+              } else {
+                this.message = error.message;
+                this.messageType = "error";
+              }
+            }
+          },
 
-					async createAccount() {
-						try {
-							const userCredential = await createUserWithEmailAndPassword(auth, this.email, this.password);
-							const user = userCredential.user;
+          async createAccount() {
+            try {
+              const userCredential = await createUserWithEmailAndPassword(
+                auth,
+                this.email,
+                this.password
+              );
+              const user = userCredential.user;
 
-							const walletApiUrl = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/CreateWallet";
+              const walletApiUrl =
+                "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/CreateWallet";
 
-							const walletResponse = await fetch(walletApiUrl, {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify({
-									UID: user.uid,
-									Password: this.password,
-									Balance: 100,
-								}),
-							});
+              const walletResponse = await fetch(walletApiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  UID: user.uid,
+                  Password: this.password,
+                  Balance: 100,
+                }),
+              });
 
-							if (!walletResponse.ok) throw new Error("Failed to create wallet");
+              if (!walletResponse.ok)
+                throw new Error("Failed to create wallet");
 
-							const walletData = await walletResponse.json();
+              const walletData = await walletResponse.json();
 
-							await setDoc(doc(db, "users", user.uid), {
-								email: this.email,
-								createdAt: new Date().toISOString(),
-								wallet: {
-									id: walletData.WalletId,
-									balance: walletData.Balance,
-									uid: walletData.UID,
-								},
-							});
+              await setDoc(doc(db, "users", user.uid), {
+                email: this.email,
+                createdAt: new Date().toISOString(),
+                walletId: walletData.WalletId,
+              });
 
-							localStorage.setItem("userId", user.uid);
-							localStorage.setItem("walletPassword", this.password);
-							localStorage.setItem("walletId", walletData.WalletId);
+              localStorage.setItem("userId", user.uid);
+              localStorage.setItem("walletPassword", this.password);
 
-							this.message = `Account created successfully! Welcome, ${user.email}.`;
-							this.messageType = "success";
+              this.message = `Account created successfully! Welcome, ${user.email}.`;
+              this.messageType = "success";
 
-							setTimeout(() => {
-								window.location.href = "../backend/Enroll/enroll.html";
-							}, 2000);
-						} catch (error) {
-							this.message = "Account creation failed: " + error.message;
-							this.messageType = "error";
-						}
-					},
-				},
-			});
+              setTimeout(() => {
+                window.location.href = "../backend/Enroll/enroll.html";
+              }, 2000);
+            } catch (error) {
+              this.message = "Account creation failed: " + error.message;
+              this.messageType = "error";
+            }
+          },
+        },
+      });
 
-			app.mount("#app");
-		</script>
-	</body>
+      app.mount("#app");
+    </script>
+  </body>
 </html>

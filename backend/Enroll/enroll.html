@@ -61,10 +61,7 @@
           </p>
           <p class="text-gray-600 font-medium mb-2">Content:</p>
           <ul class="list-disc list-inside text-sm text-gray-500 mb-4">
-            <li
-              v-for="item in parseContent(course.courseContent)"
-              :key="item"
-            >
+            <li v-for="item in parseContent(course.courseContent)" :key="item">
               {{ item }}
             </li>
           </ul>
@@ -90,8 +87,7 @@
         </h3>
         <p><strong>Course:</strong> {{ enrollResponse.course }}</p>
         <p>
-          <strong>Wallet Balance:</strong> $
-          {{ enrollResponse.wallet_balance }}
+          <strong>Wallet Balance:</strong> $ {{ enrollResponse.wallet_balance }}
         </p>
         <p><strong>Log ID:</strong> {{ enrollResponse.log_id }}</p>
       </div>
@@ -99,9 +95,7 @@
 
     <script type="module">
       import { auth, db } from "../../LogIn/firebase.js";
-      import {
-        onAuthStateChanged,
-      } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+      import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
       import {
         getDoc,
         doc,
@@ -126,8 +120,7 @@
               const userRef = doc(db, "users", user.uid);
               const userSnap = await getDoc(userRef);
               if (userSnap.exists()) {
-                const wallet = userSnap.data().wallet;
-                this.walletId = wallet.id;
+                this.walletId = userSnap.data().walletId;
                 this.walletPassword =
                   localStorage.getItem("walletPassword") || "";
                 this.loadCourses();
