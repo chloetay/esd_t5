@@ -6,10 +6,11 @@ app = Flask(__name__)
 
 # CORS configuration for frontend access
 CORS(app, resources={r"/*": {
-    "origins": "http://localhost:8080",
+    "origins": ["http://localhost:8080", "http://0.0.0.0:8080"],
     "methods": ["GET", "POST", "OPTIONS"],
     "allow_headers": ["Content-Type"]
 }}, supports_credentials=True)
+
 
 # Microservice URLs
 COURSE_URL = "http://course:5000/course"
@@ -18,8 +19,11 @@ WALLET_GET_URL = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wall
 WALLET_UPDATE_URL = "https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet/UpdateBalance"
 ENROLL_ERROR_URL = "http://enroll-error:5004/validate"
 
-@app.route("/enroll", methods=["POST"])
+@app.route("/enroll", methods=["POST", "OPTIONS"])
 def enroll():
+    if request.method == "OPTIONS":
+        # Preflight CORS request
+        return '', 204
     data = request.json
     print("📨 Received enroll POST with data:", data)
 
