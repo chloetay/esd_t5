@@ -31,4 +31,31 @@ INSERT INTO course (courseId, courseName, courseDescription, courseContent, cour
 ("C002", "Learning Mandarin", 
 "你好! Learn the basics of Mandarin, including pronunciation, simple phrases, and everyday vocabulary. Perfect for travelers and language enthusiasts.",
 '["L001","Q001","L002","Q002","N002"]',
-15.00);
+15.00), 
+("C003", "Web Development 101",
+"Get started with web development by learning HTML, CSS, and JavaScript. Build your first interactive website from scratch.",
+'["L001","Q001","L002","Q002","N001"]',
+20.00),
+
+("C004", "Financial Literacy Basics",
+"Understand the essentials of personal finance, including budgeting, saving, investing, and debt management.",
+'["L001","Q001","L002","Q002","N001"]',
+12.00),
+
+("C005", "Digital Marketing Essentials",
+"Learn the fundamentals of digital marketing such as SEO, social media strategy, email marketing, and content creation.",
+'["L001","Q001","L002","Q002","N001"]',
+18.00),
+
+("C006", "Mindfulness and Stress Management",
+"Explore practical techniques to manage stress, improve focus, and live mindfully in a busy world.",
+'["L001","Q001","L002","Q002","N001"]',
+8.00),
+
+("C007", "Graphic Design with Canva",
+"Create eye-catching visuals using Canva. Learn basic design principles and how to design for social media, presentations, and more.",
+'["L001","Q001","L002","Q002","N001"]',
+10.00);
+
+
+
