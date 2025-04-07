@@ -91,7 +91,7 @@ services:
 
   take-course:
       build:
-        context: ./backend/Take_Course
+        context: ./backend/TakeCourse
         dockerfile: Dockerfile
       container_name: take-course
       ports:
