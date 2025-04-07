@@ -82,6 +82,17 @@ services:
     networks:
       - learning-network
 
+  php-notes:
+    build:
+      context: ./backend/Notes
+      dockerfile: notes.Dockerfile
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./backend/Notes:/var/www/html
+    networks:
+      - learning-network
+
   quiz:
     build:
       context: ./backend/Quiz

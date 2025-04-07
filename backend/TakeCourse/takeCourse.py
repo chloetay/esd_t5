@@ -11,7 +11,7 @@ CORS(app)
 COURSE_SERVICE_URL = os.getenv("COURSE_SERVICE_URL", "http://course:5000")
 COURSE_LOGS_URL = os.getenv("COURSE_LOGS_URL", "http://course-logs:5003")
 
-@app.route("/takecourse/<string:courseId>/<string:userId>", methods=["GET"])
+@app.route("/takeCourse/<string:courseId>/<string:userId>", methods=["GET"])
 def take_course(courseId, userId):
     try:
         # 1. Get course info
@@ -46,7 +46,7 @@ def take_course(courseId, userId):
                 return jsonify({
                     "code": 200,
                     "data": {
-                        "redirectUrl": f"quiz.html?quizid={item_id}"
+                        "redirectUrl": f"quiz.html?courseId={courseId}&quizId={item_id}"
                     }
                 }), 200
 
@@ -54,7 +54,7 @@ def take_course(courseId, userId):
                 return jsonify({
                     "code": 200,
                     "data": {
-                        "redirectUrl": f"notes.html?notesid={item_id}"
+                        "redirectUrl": f"notes.html?courseId={courseId}&notesId={item_id}"
                     }
                 }), 200
 

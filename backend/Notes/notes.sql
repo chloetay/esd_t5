@@ -10,6 +10,4 @@ CREATE TABLE notes (
 
 -- Add example rows (make sure these files exist in your /notes folder)
 INSERT INTO notes (notes_id, file_name) VALUES
-("notes_00001", 'Data_Structures.pdf'),
-("notes_00002", 'notes2.pdf'),
-("notes_00003", 'notes3.pdf');
+("N001", 'Data_Structures.pdf');

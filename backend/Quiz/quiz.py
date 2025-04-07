@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request, abort, make_response
-from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 from pydantic import BaseModel
 from typing import Dict
 from flask_cors import CORS
@@ -9,8 +10,8 @@ import os
 db_password = os.getenv("db_password", "NewSecurePassword123")
 
 # MongoDB Connection
-MONGO_URI = f"mongodb+srv://jovibong2023:{db_password}@cluster0.yflll.mongodb.net/ESD?retryWrites=true&w=majority"
-client = MongoClient(MONGO_URI)
+MONGO_URI = f"mongodb://jovibong2023:{db_password}@cluster0-shard-00-00.yflll.mongodb.net:27017,cluster0-shard-00-01.yflll.mongodb.net:27017,cluster0-shard-00-02.yflll.mongodb.net:27017/?replicaSet=atlas-cnbapy-shard-0&ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0"
+client = MongoClient(MONGO_URI, server_api=ServerApi('1'))
 db = client["ESD"]
 collection = db["quiz"]
 
@@ -23,11 +24,16 @@ def home():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@app.route("/quiz/<string:quizid>", methods=["GET"])
-def get_quiz(quizid: str):
-    quiz = collection.find_one({"quizid": quizid}, {"_id": 0})
+@app.route("/quiz/<string:courseId>/<string:quizId>", methods=["GET"])
+def get_quiz(courseId: str, quizId: str):
+    quiz = collection.find_one({
+        "courseId": courseId,
+        "quizId": quizId
+    }, {"_id": 0})
+
     if not quiz:
         abort(404, description="Quiz not found")
+
     response = make_response(jsonify(quiz))
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response

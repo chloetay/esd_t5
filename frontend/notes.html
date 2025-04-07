@@ -1,53 +1,75 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <title>Available Notes</title>
+    <title>Download Notes</title>
+    <meta charset="UTF-8" />
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const courseId = params.get("courseId");
+        const notesId = params.get("notesId");
+        const userId = localStorage.getItem("userId");
+
+        if (!courseId || !notesId || !userId) {
+          alert("Missing parameters or user not logged in.");
+          return;
+        }
+
+        const downloadBtn = document.getElementById("download-btn");
+        const backBtn = document.getElementById("back-btn");
+        const nextBtn = document.getElementById("next-btn");
+
+        downloadBtn.addEventListener("click", async () => {
+          // Open the download in a new tab
+          const downloadUrl = `http://localhost:8003/notes.php/${courseId}/${notesId}`;
+          window.open(downloadUrl, "_blank");
+
+          // Show the next button
+          nextBtn.style.display = "inline-block";
+        });
+
+        nextBtn.addEventListener("click", async () => {
+          try {
+            // 1. POST to course log
+            const postResp = await fetch("http://localhost:5003/courseLogs", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                courseId: courseId,
+                userId: userId,
+                completedItem: notesId,
+              }),
+            });
+
+            if (!postResp.ok) throw new Error("Failed to update course log.");
+
+            // 2. Get next item
+            const takeRes = await fetch(
+              `http://localhost:5001/takecourse/${courseId}/${userId}`
+            );
+            const nextData = await takeRes.json();
+
+            if (nextData.code === 200 && nextData.data?.redirectUrl) {
+              window.location.href = nextData.data.redirectUrl;
+            } else {
+              alert("Course completed or no more content.");
+            }
+          } catch (err) {
+            console.error(err);
+            alert("An error occurred during Next operation.");
+          }
+        });
+
+        backBtn.addEventListener("click", () => {
+          window.location.href = `takeCourse.html?courseId=${courseId}`;
+        });
+      });
+    </script>
   </head>
   <body>
     <h2>Download Notes</h2>
-    <ul id="notes-list"></ul>
-
-    <script>
-      const BASE_URL = "http://localhost:8003/notes.php";
-
-      fetch(`${BASE_URL}/list`)
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Fetched notes from SQL DB:", data); // ✅ Log all entries
-
-          const ul = document.getElementById("notes-list");
-          data.forEach((note) => {
-            const li = document.createElement("li");
-            const a = document.createElement("a");
-
-            // Construct the URL
-            const downloadUrl = `${BASE_URL}/${note.notesId}`;
-            a.href = downloadUrl;
-            a.textContent = `Download ${note.notesId}`;
-
-            // Optional download attribute
-            a.download = "";
-
-            a.addEventListener("click", (event) => {
-              console.log(`\n--- Clicked Download Link ---`);
-              console.log("notesId:", note.notesId);
-              console.log("Download URL:", downloadUrl);
-              console.log("Expected filename format: {resolved by backend}");
-              console.log(
-                "PDF will be saved based on server headers (e.g. Content-Disposition)"
-              );
-            });
-
-            li.appendChild(a);
-            ul.appendChild(li);
-          });
-        })
-        .catch((error) => {
-          console.error("Error fetching notes:", error);
-          const ul = document.getElementById("notes-list");
-          ul.innerHTML =
-            "<li>Error loading notes. Please try again later.</li>";
-        });
-    </script>
+    <button id="download-btn">Download Now</button>
+    <button id="back-btn">Back</button>
+    <button id="next-btn" style="display: none">Next</button>
   </body>
 </html>

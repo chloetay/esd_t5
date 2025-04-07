@@ -7,10 +7,11 @@
   </head>
   <body>
     <div id="app">
-      <a :href="'course.html?courseId=' + courseId">Back to Course</a>
+      <a :href="'takeCourse.html?courseId=' + courseId">Back to Course</a>
       <h1>{{ lesson.Title }}</h1>
       <div v-if="error">{{ error }}</div>
       <div v-else v-html="lesson.Content"></div>
+      <button @click="handleNext">Next</button>
     </div>
 
     <script>
@@ -49,6 +50,54 @@
             const params = new URLSearchParams(window.location.search);
             this.courseId = params.get("courseId") || "";
             this.lessonId = params.get("lessonId") || "";
+          },
+          async handleNext() {
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+              alert("User ID not found in localStorage.");
+              return;
+            }
+
+            try {
+              // 1. POST to course-logs
+              const logResponse = await fetch(
+                "http://localhost:5003/courseLogs",
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    courseId: this.courseId,
+                    userId: userId,
+                    completedItem: this.lessonId,
+                  }),
+                }
+              );
+
+              const logData = await logResponse.json();
+              if (logResponse.ok && logData.code === 200) {
+                // 2. GET next item from takecourse
+                const nextResponse = await fetch(
+                  `http://localhost:5001/takeCourse/${this.courseId}/${userId}`
+                );
+                const nextData = await nextResponse.json();
+                if (
+                  nextResponse.ok &&
+                  nextData.code === 200 &&
+                  nextData.data?.redirectUrl
+                ) {
+                  window.location.href = nextData.data.redirectUrl;
+                } else {
+                  alert("No more content or failed to fetch next item.");
+                }
+              } else {
+                alert("Failed to update course log.");
+              }
+            } catch (err) {
+              console.error("Error processing next step:", err);
+              alert("An error occurred.");
+            }
           },
         },
         mounted() {

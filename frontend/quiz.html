@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quiz</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   </head>
   <body>
     <div id="app">
@@ -67,7 +66,8 @@
       new Vue({
         el: "#app",
         data: {
-          quizId: new URLSearchParams(window.location.search).get("quizid"),
+          quizId: new URLSearchParams(window.location.search).get("quizId"),
+          courseId: new URLSearchParams(window.location.search).get("courseId"),
           questions: [],
           currentQuestionIndex: 0,
           selectedOption: null,
@@ -81,30 +81,32 @@
           this.fetchQuiz();
         },
         methods: {
-          fetchQuiz() {
-            if (!this.quizId) {
-              this.error = "Quiz ID not specified.";
+          async fetchQuiz() {
+            if (!this.quizId || !this.courseId) {
+              this.error = "Quiz ID or Course ID not specified.";
               this.loading = false;
               return;
             }
-            axios
-              .get(`http://localhost:8000/quiz/${this.quizId}`)
-              .then((response) => {
-                this.questions = response.data.questions.map((question) => ({
-                  question: question.question,
-                  options: question.options,
-                  correctAnswer: question.correctAnswer,
-                }));
-                this.loading = false;
-              })
-              .catch((error) => {
-                if (error.response && error.response.status === 404) {
-                  this.error = "Quiz ID not found.";
-                } else {
-                  this.error = "Failed to load the quiz. Please try again.";
-                }
-                this.loading = false;
-              });
+
+            try {
+              const res = await fetch(
+                `http://localhost:5005/quiz/${this.courseId}/${this.quizId}`
+              );
+              if (!res.ok)
+                throw new Error("Quiz not found or failed to fetch.");
+              const data = await res.json();
+
+              this.questions = data.questions.map((q) => ({
+                question: q.question,
+                options: q.options,
+                correctAnswer: q.correctAnswer,
+              }));
+            } catch (err) {
+              console.error(err);
+              this.error = "Failed to load the quiz. Please try again.";
+            } finally {
+              this.loading = false;
+            }
           },
           hasQuestions() {
             return this.questions.length > 0;
@@ -115,7 +117,7 @@
                 this.selectedOption ===
                 this.questions[this.currentQuestionIndex].correctAnswer;
               this.submitted = true;
-              this.score += this.isCorrect * 1;
+              this.score += this.isCorrect ? 1 : 0;
             }
           },
           nextQuestion() {
@@ -125,12 +127,51 @@
               this.currentQuestionIndex++;
             }
           },
-          finishQuiz() {
-            alert(`Quiz Completed! Your score is ${this.score}.`);
-            this.goBack();
+          async finishQuiz() {
+            const userId = localStorage.getItem("userId");
+            if (!userId) {
+              alert("User ID not found in localStorage.");
+              return;
+            }
+
+            try {
+              // 1. POST to course logs
+              const postRes = await fetch("http://localhost:5003/courseLogs", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  courseId: this.courseId,
+                  userId: userId,
+                  completedItem: this.quizId,
+                }),
+              });
+
+              if (!postRes.ok) throw new Error("Failed to log completion");
+
+              // 2. GET next item from takecourse
+              const takeRes = await fetch(
+                `http://localhost:5001/takeCourse/${this.courseId}/${userId}`
+              );
+              const takeData = await takeRes.json();
+
+              if (takeData.code === 200 && takeData.data?.redirectUrl) {
+                window.location.href = takeData.data.redirectUrl;
+              } else {
+                alert("Quiz complete! No more content.");
+              }
+            } catch (err) {
+              console.error(err);
+              alert("An error occurred while finishing the quiz.");
+            }
           },
           goBack() {
-            window.location.href = "index.html";
+            if (this.courseId) {
+              window.location.href = `takeCourse.html?courseId=${this.courseId}`;
+            } else {
+              window.location.href = "index.html";
+            }
           },
         },
       });

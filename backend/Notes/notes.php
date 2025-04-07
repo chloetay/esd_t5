@@ -3,37 +3,18 @@ header("Access-Control-Allow-Origin: *");
 $request_uri = $_SERVER['REQUEST_URI'];
 
 // Database config
-$host = 'host.docker.internal';
-$db = 'esd_project';
-$user = 'root';
-$pass = '';
+$host = 'mysql';
+$db = 'course';
+$user = 'is213';
+$pass = 'password';
 
-// Handle: /notes.php/list — return JSON of all notesId
-if (preg_match('/\/notes\.php\/list/', $request_uri)) {
-    header('Content-Type: application/json');
-
-
-    try {
-        $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        $stmt = $pdo->query("SELECT notesId, fileName FROM notes ORDER BY notesId ASC");
-        $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        echo json_encode($notes);
-    } catch (PDOException $e) {
-        http_response_code(500);
-        echo json_encode(["error" => $e->getMessage()]);
-    }
-    exit;
-}
-
-// Handle: /notes.php/notes_<id> — download the corresponding PDF
-if (preg_match('/\/notes\.php\/(notes_\w+)/', $request_uri, $matches)) {
-    $notesId = $matches[1];
+// Handle: /notes.php/<courseId>/<notesId> — download PDF
+if (preg_match('/\/notes\.php\/([^\/]+)\/([^\/]+)/', $request_uri, $matches)) {
+    $courseId = $matches[1];
+    $notesId = $matches[2];
 } else {
     http_response_code(400);
-    echo "Invalid URL format. Use /notes.php/<notesId> or /notes.php/list";
+    echo "Invalid URL format. Use /notes.php/<courseId>/<notesId> or /notes.php/list";
     exit;
 }
 
@@ -41,8 +22,8 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $stmt = $pdo->prepare("SELECT fileName FROM notes WHERE notesId = ?");
-    $stmt->execute([$notesId]);
+    $stmt = $pdo->prepare("SELECT fileName FROM notes WHERE courseId = ? AND notesId = ?");
+    $stmt->execute([$courseId, $notesId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row) {
@@ -67,7 +48,7 @@ try {
         }
     } else {
         http_response_code(404);
-        echo "No file found for notesId $notesId.";
+        echo "No file found for courseId $courseId and notesId $notesId.";
     }
 } catch (PDOException $e) {
     http_response_code(500);

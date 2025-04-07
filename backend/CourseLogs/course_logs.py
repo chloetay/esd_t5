@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
+from sqlalchemy.orm.attributes import flag_modified
 
 app = Flask(__name__)
 CORS(app)
@@ -47,36 +48,53 @@ def add_or_update_course_log():
     data = request.get_json()
     courseId = data.get('courseId')
     userId = data.get('userId')
-    completedItems = data.get('completedItems')
+    completedItem = data.get('completedItem')
 
-    if not all([courseId, userId, isinstance(completedItems, list)]):
+    if not all([courseId, userId, completedItem]) or not isinstance(completedItem, str):
         return jsonify({
             "code": 400,
-            "message": "Missing or invalid fields"
+            "message": "Missing or invalid fields: courseId, userId, completedItem"
         }), 400
 
-    # Validate all items are strings like "L001", "Q002"
-    if not all(isinstance(item, str) for item in completedItems):
-        return jsonify({
-            "code": 400,
-            "message": "completedItems must be an array of string IDs"
-        }), 400
-
+    # Check if log exists
     log = CourseLog.query.filter_by(courseId=courseId, userId=userId).first()
+
     if log:
-        existing = set(log.completedItems)
-        incoming = set(completedItems)
-        log.completedItems = list(existing.union(incoming))
+        # Append item if not already in list
+        if completedItem not in log.completedItems:
+            log.completedItems.append(completedItem)
+            flag_modified(log, "completedItems")
     else:
-        log = CourseLog(courseId=courseId, userId=userId, completedItems=completedItems)
+        # Create new log entry with one item
+        log = CourseLog(
+            courseId=courseId,
+            userId=userId,
+            completedItems=[completedItem]
+        )
         db.session.add(log)
 
     db.session.commit()
+
     return jsonify({
         "code": 200,
         "message": "Course log updated",
         "data": log.json()
     }), 200
+
+@app.route("/courseLogs/<string:courseId>/<string:userId>", methods=['DELETE'])
+def delete_course_log(courseId, userId):
+    log = CourseLog.query.filter_by(courseId=courseId, userId=userId).first()
+    if log:
+        db.session.delete(log)
+        db.session.commit()
+        return jsonify({
+            "code": 200,
+            "message": f"Course log for user '{userId}' and course '{courseId}' deleted."
+        }), 200
+    return jsonify({
+        "code": 404,
+        "message": "Course log not found"
+    }), 404
 
 
 if __name__ == "__main__":

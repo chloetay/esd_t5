@@ -15,7 +15,7 @@ CREATE TABLE course (
  INSERT INTO course (courseId, courseName, courseDescription, courseContent, courseCost) VALUES
 ("C001", "Introduction to Python", 
 "Learn the basics of Python programming, including syntax, data types, and how to create simple applications. This course is perfect for beginners with no prior coding experience.",
-'["L001","Q001","L002","Q002","N001"]',
+'["L001","L002","Q001","L003","Q002","N001","L004","Q003"]',
 10.00),
 ("C002", "Learning Mandarin", 
 "你好! Learn the basics of Mandarin, including pronunciation, simple phrases, and everyday vocabulary. Perfect for travelers and language enthusiasts.",
