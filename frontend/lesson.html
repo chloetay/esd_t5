@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lesson Page</title>
+    <script src="https://unpkg.com/vue@3"></script>
+  </head>
+  <body>
+    <div id="app">
+      <a :href="'course.html?courseId=' + courseId">Back to Course</a>
+      <h1>{{ lesson.Title }}</h1>
+      <div v-if="error">{{ error }}</div>
+      <div v-else v-html="lesson.Content"></div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            courseId: "",
+            lessonId: "",
+            lesson: {
+              Title: "",
+              Content: "",
+            },
+            error: "",
+          };
+        },
+        methods: {
+          async fetchLesson() {
+            try {
+              const response = await fetch(
+                `https://personal-k0knvd3i.outsystemscloud.com/LessonService/rest/LessonAPI/GetLesson/${this.lessonId}/${this.courseId}`
+              );
+              const data = await response.json();
+              if (data.Status.StatusCode === "Ok") {
+                this.lesson = data.LessonDTO;
+              } else {
+                this.error =
+                  data.Status.ErrorMessage || "Failed to fetch lesson";
+              }
+            } catch (err) {
+              this.error = "Network error while fetching lesson.";
+            }
+          },
+          getQueryParams() {
+            const params = new URLSearchParams(window.location.search);
+            this.courseId = params.get("courseId") || "";
+            this.lessonId = params.get("lessonId") || "";
+          },
+        },
+        mounted() {
+          this.getQueryParams();
+          if (this.courseId && this.lessonId) {
+            this.fetchLesson();
+          } else {
+            this.error = "Missing courseId or lessonId in URL.";
+          }
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
