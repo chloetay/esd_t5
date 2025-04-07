@@ -81,7 +81,7 @@
     </div>
 
     <script type="module">
-      import { auth, db } from "../../LogIn/firebase.js";
+      import { auth, db } from "../LogIn/firebase.js";
       import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
       import {
         getDoc,
@@ -126,7 +126,7 @@
             } else {
               this.message = "Please log in again.";
               this.messageType = "error";
-              window.location.href = "../../log in page/login.html";
+              window.location.href = "../LogIn/login.html";
             }
           });
         },
@@ -190,7 +190,7 @@
             }
           },
           goToProfile() {
-            window.location.href = "../frontend/profile.html";
+            window.location.href = "./profile.html";
           },
         },
       });
