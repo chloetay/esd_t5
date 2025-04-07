@@ -24,11 +24,11 @@ CREATE TABLE COURSE (
 );
 
 INSERT INTO COURSE (courseId, courseName, courseDescription, courseContent, courseCost) VALUES
-("course_00001", "Introduction to Python", 
+("C001", "Introduction to Python", 
 "Learn the basics of Python programming, including syntax, data types, and how to create simple applications. This course is perfect for beginners with no prior coding experience.",
-'["lesson_00001","quiz_00001","lesson_00002","quiz_00002","notes_00001"]',
+'["L001","Q001","L002","Q002","N001"]',
 10.00),
-("course_00002", "Learning Mandarin", 
+("C002", "Learning Mandarin", 
 "你好! Learn the basics of Mandarin, including pronunciation, simple phrases, and everyday vocabulary. Perfect for travelers and language enthusiasts.",
-'["lesson_00010","quiz_00011","lesson_00012","quiz_00013","notes_00014"]',
+'["L001","Q001","L002","Q002","N002"]',
 15.00);
