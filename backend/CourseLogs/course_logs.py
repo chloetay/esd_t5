@@ -55,12 +55,18 @@ def add_or_update_course_log():
             "message": "Missing or invalid fields"
         }), 400
 
+    # Validate all items are strings like "L001", "Q002"
+    if not all(isinstance(item, str) for item in completedItems):
+        return jsonify({
+            "code": 400,
+            "message": "completedItems must be an array of string IDs"
+        }), 400
+
     log = CourseLog.query.filter_by(courseId=courseId, userId=userId).first()
     if log:
-        existing = {tuple(d.items())[0] for d in log.completedItems}
-        incoming = {tuple(d.items())[0] for d in completedItems}
-        merged = existing.union(incoming)
-        log.completedItems = [dict([item]) for item in merged]
+        existing = set(log.completedItems)
+        incoming = set(completedItems)
+        log.completedItems = list(existing.union(incoming))
     else:
         log = CourseLog(courseId=courseId, userId=userId, completedItems=completedItems)
         db.session.add(log)
@@ -71,6 +77,7 @@ def add_or_update_course_log():
         "message": "Course log updated",
         "data": log.json()
     }), 200
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5003, debug=True)
