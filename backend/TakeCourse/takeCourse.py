@@ -1,79 +1,74 @@
-# takecourse/app.py
 from flask import Flask, jsonify
 import requests
 import os
+import json
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
+# Microservice URLs for course and course logs
 COURSE_SERVICE_URL = os.getenv("COURSE_SERVICE_URL", "http://course:5000")
 COURSE_LOGS_URL = os.getenv("COURSE_LOGS_URL", "http://course-logs:5003")
-LESSON_SERVICE_URL = os.getenv("LESSON_SERVICE_URL", "http://lesson:5005/LessonService/rest/LessonAPI")
-QUIZ_SERVICE_URL = os.getenv("QUIZ_SERVICE_URL", "http://quiz:8000")
 
 @app.route("/takecourse/<string:courseId>/<string:userId>", methods=["GET"])
 def take_course(courseId, userId):
-    # 1. Get user progress
-    logs_resp = requests.get(f"{COURSE_LOGS_URL}/courseLogs/{courseId}/{userId}")
-    completed_items = []
-    if logs_resp.status_code == 200:
-        completed_items = logs_resp.json().get("data", {}).get("completedItems", [])
-        completed_items = [list(item.keys())[0] for item in completed_items]
+    try:
+        # 1. Get course info
+        course_resp = requests.get(f"{COURSE_SERVICE_URL}/course/{courseId}")
+        if course_resp.status_code != 200:
+            return jsonify({"code": 404, "message": "Course not found"}), 404
+        course_info = course_resp.json().get("data", {})
+        course_content = json.loads(course_info.get("courseContent", "[]"))
 
-    # 2. Get lessons
-    lessons_resp = requests.get(f"{LESSON_SERVICE_URL}/lesson/by-course/{courseId}")
-    lessons = []
-    if lessons_resp.status_code == 200:
-        lessons = lessons_resp.json()
+        # 2. Get completed items from course logs
+        logs_resp = requests.get(f"{COURSE_LOGS_URL}/courseLogs/{courseId}/{userId}")
+        completed_items = []
+        if logs_resp.status_code == 200:
+            completed_items = logs_resp.json().get("data", {}).get("completedItems", [])
 
-    # 3. Get quizzes
-    quizzes_resp = requests.get(f"{QUIZ_SERVICE_URL}/quiz")
-    quizzes = []
-    if quizzes_resp.status_code == 200:
-        quizzes = [q for q in quizzes_resp.json() if q.get("courseId") == courseId]
+        # 3. Loop through course content
+        for item_id in course_content:
+            if item_id in completed_items:
+                continue
 
-    # 4. Construct unified content list
-    content_items = []
-    for lesson in sorted(lessons, key=lambda x: x["lessonId"]):
-        content_items.append((f"lesson_{lesson['lessonId']}", "lesson", lesson))
-    for quiz in sorted(quizzes, key=lambda x: x.get("quizid")):
-        content_items.append((f"quiz_{quiz['quizid']}", "quiz", quiz))
+            prefix = item_id[0].upper()
 
-    # 5. Determine next incomplete item
-    for item_key, item_type, item_data in content_items:
-        if item_key not in completed_items:
-            if item_type == "lesson":
-                detail_resp = requests.get(f"{LESSON_SERVICE_URL}/lesson/{courseId}/{item_data['lessonId']}")
-                if detail_resp.status_code == 200:
-                    return jsonify({
-                        "code": 200,
-                        "data": {
-                            "nextItem": {
-                                "type": "lesson",
-                                "title": detail_resp.json().get("title"),
-                                "content": detail_resp.json().get("content")
-                            }
-                        }
-                    }), 200
-            elif item_type == "quiz":
-                detail_resp = requests.get(f"{QUIZ_SERVICE_URL}/quiz/{item_data['quizid']}")
-                if detail_resp.status_code == 200:
-                    return jsonify({
-                        "code": 200,
-                        "data": {
-                            "nextItem": {
-                                "type": "quiz",
-                                "title": item_data.get("title", "Quiz"),
-                                "questions": item_data.get("questions")
-                            }
-                        }
-                    }), 200
+            if prefix == "L":
+                return jsonify({
+                    "code": 200,
+                    "data": {
+                        "redirectUrl": f"lesson.html?courseId={courseId}&lessonId={item_id}"
+                    }
+                }), 200
 
-    return jsonify({
-        "code": 200,
-        "message": "Course completed"
-    }), 200
+            elif prefix == "Q":
+                return jsonify({
+                    "code": 200,
+                    "data": {
+                        "redirectUrl": f"quiz.html?quizid={item_id}"
+                    }
+                }), 200
+
+            elif prefix == "N":
+                return jsonify({
+                    "code": 200,
+                    "data": {
+                        "redirectUrl": f"notes.html?notesid={item_id}"
+                    }
+                }), 200
+
+        # 4. All items completed
+        return jsonify({
+            "code": 200,
+            "message": "Course completed"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "code": 500,
+            "message": f"Internal server error: {str(e)}"
+        }), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)
