@@ -64,20 +64,38 @@ services:
     networks:
       - learning-network
 
-  # quiz:
-  #   build:
-  #     context: ./backend/Quiz
-  #     dockerfile: quiz.Dockerfile
-  #   container_name: quiz
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - db_password=NewSecurePassword123
-  #   networks:
-  #     - learning-network
+  quiz:
+    build:
+      context: ./backend/Quiz
+      dockerfile: quiz.Dockerfile
+    container_name: quiz
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - db_password=NewSecurePassword123
+    networks:
+      - learning-network
 
-
+  take-course:
+      build:
+        context: ./backend/Take_Course
+        dockerfile: Dockerfile
+      container_name: take-course
+      ports:
+        - "5001:5001"
+      environment:
+        - COURSE_SERVICE_URL=http://course:5000
+        - COURSE_LOGS_URL=http://course-logs:5003
+        - LESSON_SERVICE_URL=http://lesson:5005/LessonService/rest/LessonAPI
+        - QUIZ_SERVICE_URL=http://quiz:8000
+      depends_on:
+        - course
+        - course-logs
+        - quiz
+      networks:
+        - learning-network
+      
   pgdb:
     image: postgres
     container_name: pgdb
@@ -118,7 +136,7 @@ services:
     networks:
       - learning-network
 
-  # takecourse:
+  # takecourse (old):
   #   build:
   #     context: ./takecourse
   #     dockerfile: Dockerfile
