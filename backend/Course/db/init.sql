@@ -12,7 +12,7 @@ CREATE TABLE course (
 );
 
 
- INSERT INTO COURSE (courseId, courseName, courseDescription, courseContent, courseCost) VALUES
+ INSERT INTO course (courseId, courseName, courseDescription, courseContent, courseCost) VALUES
 ("C001", "Introduction to Python", 
 "Learn the basics of Python programming, including syntax, data types, and how to create simple applications. This course is perfect for beginners with no prior coding experience.",
 '["L001","Q001","L002","Q002","N001"]',
