@@ -118,7 +118,7 @@ services:
     networks:
       - learning-network
 
-  # takecourse:
+  # takecourse (old):
   #   build:
   #     context: ./takecourse
   #     dockerfile: Dockerfile
