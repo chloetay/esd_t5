@@ -1,6 +1,12 @@
 version: '3.9'
 
 services:
+  deps-installer:
+    build:
+      context: .
+      dockerfile: requirements.dockerfile
+    volumes:
+      - .:/app
   course:
     build:
       context: ./backend/Course
