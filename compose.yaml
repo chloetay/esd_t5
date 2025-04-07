@@ -64,6 +64,18 @@ services:
     networks:
       - learning-network
 
+  enroll-error:
+  build:
+    context: ./backend/EnrollError
+    dockerfile: Dockerfile
+  container_name: enroll-error
+  ports:
+    - "5004:5004"
+  depends_on:
+    - enroll-log
+  networks:
+    - learning-network
+
   quiz:
     build:
       context: ./backend/Quiz
@@ -153,17 +165,7 @@ services:
   #     - quiz
   #   networks:
   #     - learning-network
-  enroll-error:
-    build:
-      context: ./backend/EnrollError
-      dockerfile: Dockerfile
-    container_name: enroll-error
-    ports:
-      - "5004:5004"
-    depends_on:
-      - enroll-log
-    networks:
-      - learning-network
+
 
 
 
