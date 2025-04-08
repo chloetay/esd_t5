@@ -179,6 +179,7 @@ services:
       - ./backend/Course/db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./backend/Course/db:/docker-entrypoint-initdb.d
       - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
+      - ./init.sql:/docker-entrypoint-initdb.d/00-global-init.sql         
     networks:
       - learning-network
 
