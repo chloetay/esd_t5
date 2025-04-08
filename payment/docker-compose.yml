@@ -1,0 +1,92 @@
+services:
+  # Kong API Gateway
+  kong:
+    image: kong:latest
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
+    ports:
+      - "9000:8000"  # Kong proxy port (user-facing)
+      - "8445:8443"  # Kong proxy SSL port
+      - "8002:8001"  # Kong admin API
+      - "8446:8444"  # Kong admin API SSL
+    volumes:
+      - ./kong.yml:/etc/kong/kong.yml
+    networks:
+      - payment-network
+    depends_on:
+      - payment-service
+      - ui-service
+
+  # UI Service (Python Flask)
+  ui-service:
+    build:
+      context: ./ui-service
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ui-service:/app
+    networks:
+      - payment-network
+
+  # Transaction Logs Service
+  transaction-logs-service:
+    build:
+      context: ./transaction-logs-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@transactionlogs_db:5432/transactionlogs
+    volumes:
+      - ./transaction-logs-service:/app
+    networks:
+      - payment-network
+    depends_on:
+      - transactionlogs_db
+    # IMPORTANT: Changed from transaction_logs:app to app:app to match the actual file name
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8005", "--reload"]
+
+  # Payment Service (No database dependency)
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8000"
+    environment:
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - API_GATEWAY_URL=http://kong:8000
+      - TRANSACTION_LOGS_URL=http://transaction-logs-service:8005/api/logs
+    volumes:
+      - ./payment-service:/app
+    networks:
+      - payment-network
+
+  # Transaction Logs Database
+  transactionlogs_db:
+    image: postgres:14
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=transactionlogs
+    volumes:
+      - transactionlogs_data:/var/lib/postgresql/data
+    networks:
+      - payment-network
+
+networks:
+  payment-network:
+    driver: bridge
+
+volumes:
+  transactionlogs_data:

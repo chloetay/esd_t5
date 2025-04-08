@@ -1,0 +1,63 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: payment-service
+    url: http://payment-service:8000
+    routes:
+      - name: payment-routes
+        paths:
+          - /api/payments
+        strip_path: true
+        path_handling: v1
+
+  - name: ui-service
+    url: http://ui-service:3000
+    routes:
+      - name: ui-routes
+        paths:
+          - /
+        strip_path: false
+        path_handling: v1
+
+  - name: wallet-service
+    url: https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet
+    routes:
+      - name: wallet-routes
+        paths:
+          - /api/wallet
+        strip_path: true
+        path_handling: v1
+
+  - name: transaction-logs-service
+    url: http://transaction-logs-service:8005
+    routes:
+      - name: transaction-logs-routes
+        paths:
+          - /api/transaction-logs
+        strip_path: false
+        path_handling: v1
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Type
+        - Content-Length
+        - Content-MD5
+        - Date
+        - X-Auth-Token
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
