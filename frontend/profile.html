@@ -34,7 +34,14 @@
           class="list-disc list-inside text-gray-600"
           v-if="enrolledCourses.length"
         >
-          <li v-for="course in enrolledCourses" :key="course">{{ course }}</li>
+          <li v-for="course in enrolledCourses" :key="course.courseId">
+            <a
+              :href="`./takeCourse.html?courseId=${course.courseId}`"
+              class="text-blue-600 hover:underline"
+            >
+              {{ course.courseName }}
+            </a>
+          </li>
         </ul>
         <p v-else class="text-gray-500">
           You have not enrolled in any courses yet.
@@ -108,7 +115,10 @@
 
                 this.enrolledCourses = allCourses
                   .filter((c) => myCourses.includes(c.courseId))
-                  .map((c) => c.courseName);
+                  .map((c) => ({
+                    courseId: c.courseId,
+                    courseName: c.courseName,
+                  }));
               }
             } else {
               window.location.href = "../LogIn/login.html";

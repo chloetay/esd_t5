@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Completed Course</title>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const courseId = params.get("courseId");
+        const userId = localStorage.getItem("userId");
+
+        const titleEl = document.getElementById("course-title");
+        const descEl = document.getElementById("course-description");
+        const lessonsList = document.getElementById("lessons-list");
+        const quizzesList = document.getElementById("quizzes-list");
+        const notesList = document.getElementById("notes-list");
+
+        if (!courseId || !userId) {
+          titleEl.innerText = "Missing courseId or userId.";
+          return;
+        }
+
+        // Helper to build redirect URL
+        function getRedirectUrl(courseId, itemId) {
+          const prefix = itemId[0].toUpperCase();
+          if (prefix === "L")
+            return `lesson.html?courseId=${courseId}&lessonId=${itemId}`;
+          if (prefix === "Q")
+            return `quiz.html?courseId=${courseId}&quizId=${itemId}`;
+          if (prefix === "N")
+            return `notes.html?courseId=${courseId}&notesId=${itemId}`;
+          return "#";
+        }
+
+        // 1. Load course info
+        fetch(`http://localhost:5000/course/${courseId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.code === 200) {
+              titleEl.innerText = data.data.courseName;
+              descEl.innerText = data.data.courseDescription;
+            } else {
+              titleEl.innerText = "Course not found.";
+            }
+          })
+          .catch((err) => {
+            console.error("Error fetching course info:", err);
+            titleEl.innerText = "Failed to load course.";
+          });
+
+        // 2. Load course logs to get completed items
+        fetch(`http://localhost:5003/courseLogs/${courseId}/${userId}`)
+          .then((res) => res.json())
+          .then((data) => {
+            const completed = data.data?.completedItems || [];
+
+            completed.forEach((itemId) => {
+              const prefix = itemId[0].toUpperCase();
+              const li = document.createElement("li");
+              const a = document.createElement("a");
+
+              a.href = getRedirectUrl(courseId, itemId);
+              a.innerText = itemId;
+              a.style.color = "blue";
+              a.style.textDecoration = "underline";
+
+              li.appendChild(a);
+
+              if (prefix === "L") {
+                lessonsList.appendChild(li);
+              } else if (prefix === "Q") {
+                quizzesList.appendChild(li);
+              } else if (prefix === "N") {
+                notesList.appendChild(li);
+              }
+            });
+          })
+          .catch((err) => {
+            console.error("Failed to fetch course logs:", err);
+          });
+
+        // Back button
+        document.getElementById("back-btn").addEventListener("click", () => {
+          window.location.href = "profile.html";
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div>
+      <h1>🎉 You have completed this course, congrats!</h1>
+      <h2 id="course-title">Loading course...</h2>
+      <p id="course-description"></p>
+
+      <h3>Lessons Completed</h3>
+      <ul id="lessons-list"></ul>
+
+      <h3>Quizzes Completed</h3>
+      <ul id="quizzes-list"></ul>
+
+      <h3>Notes Completed</h3>
+      <ul id="notes-list"></ul>
+
+      <button id="back-btn">← Back to Profile</button>
+    </div>
+  </body>
+</html>

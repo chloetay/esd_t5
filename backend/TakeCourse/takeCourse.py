@@ -61,7 +61,9 @@ def take_course(courseId, userId):
         # 4. All items completed
         return jsonify({
             "code": 200,
-            "message": "Course completed"
+            "data": {
+                "redirectUrl": f"completedCourse.html?courseId={courseId}"
+            }
         }), 200
 
     except Exception as e:
