@@ -11,7 +11,7 @@ CORS(app)
 COURSE_SERVICE_URL = os.getenv("COURSE_SERVICE_URL", "http://course:5000")
 COURSE_LOGS_URL = os.getenv("COURSE_LOGS_URL", "http://course-logs:5003")
 
-@app.route("/takeCourse/<string:courseId>/<string:userId>", methods=["GET"])
+@app.route("/<string:courseId>/<string:userId>", methods=["GET"])
 def take_course(courseId, userId):
     try:
         # 1. Get course info
@@ -22,7 +22,7 @@ def take_course(courseId, userId):
         course_content = json.loads(course_info.get("courseContent", "[]"))
 
         # 2. Get completed items from course logs
-        logs_resp = requests.get(f"{COURSE_LOGS_URL}/courseLogs/{courseId}/{userId}")
+        logs_resp = requests.get(f"{COURSE_LOGS_URL}/{courseId}/{userId}")
         completed_items = []
         if logs_resp.status_code == 200:
             completed_items = logs_resp.json().get("data", {}).get("completedItems", [])

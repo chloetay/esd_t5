@@ -30,27 +30,30 @@
         const nextBtn = document.getElementById("next-btn");
 
         downloadBtn.addEventListener("click", async () => {
-          const downloadUrl = `http://localhost:8003/notes.php/${courseId}/${notesId}`;
+          const downloadUrl = `http://localhost:9000/api/notes/${courseId}/${notesId}`;
           window.open(downloadUrl, "_blank");
           nextBtn.classList.remove("hidden");
         });
 
         nextBtn.addEventListener("click", async () => {
           try {
-            const postResp = await fetch("http://localhost:5003/courseLogs", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                courseId: courseId,
-                userId: userId,
-                completedItem: notesId,
-              }),
-            });
+            const postResp = await fetch(
+              "http://localhost:9000/api/courseLogs",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  courseId: courseId,
+                  userId: userId,
+                  completedItem: notesId,
+                }),
+              }
+            );
 
             if (!postResp.ok) throw new Error("Failed to update course log.");
 
             const takeRes = await fetch(
-              `http://localhost:5001/takecourse/${courseId}/${userId}`
+              `http://localhost:9000/api/takecourse/${courseId}/${userId}`
             );
             const nextData = await takeRes.json();
 
@@ -73,7 +76,9 @@
   </head>
 
   <body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
-    <div class="bg-white rounded-2xl shadow-md max-w-xl w-full p-6 space-y-6 text-center">
+    <div
+      class="bg-white rounded-2xl shadow-md max-w-xl w-full p-6 space-y-6 text-center"
+    >
       <h2 class="text-2xl font-semibold text-gray-800">📄 Download Notes</h2>
       <p class="text-gray-600 text-sm">
         Click the button below to download the course notes in a new tab.

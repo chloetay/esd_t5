@@ -47,6 +47,42 @@ services:
         strip_path: true
         path_handling: v1
 
+  - name: notes-service
+    url: http://notes:8003/notes.php
+    routes:
+      - name: notes-route
+        paths:
+          - /api/notes
+        strip_path: true
+        path_handling: v1
+
+  - name: lesson-service
+    url: https://personal-k0knvd3i.outsystemscloud.com/LessonService/rest/LessonAPI
+    routes:
+      - name: lesson-route
+        paths:
+          - /api/lesson
+        strip_path: true
+        path_handling: v1
+
+  - name: take-course-service
+    url: http://take-course:5001
+    routes:
+      - name: take-course-route
+        paths:
+          - /api/takeCourse
+        strip_path: true
+        path_handling: v1
+
+  - name: course-logs-service
+    url: http://course-logs:5003
+    routes:
+      - name: course-logs-route
+        paths:
+          - /api/courseLogs
+        strip_path: true
+        path_handling: v1
+
 plugins:
   - name: cors
     config:

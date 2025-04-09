@@ -156,7 +156,7 @@ services:
     networks:
       - learning-network
 
-  php-notes:
+  notes:
     build:
       context: ./backend/Notes
       dockerfile: notes.Dockerfile

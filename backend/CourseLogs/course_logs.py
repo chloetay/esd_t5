@@ -30,7 +30,7 @@ class CourseLog(db.Model):
         }
 
 # Routes
-@app.route("/courseLogs/<string:courseId>/<string:userId>", methods=['GET'])
+@app.route("/<string:courseId>/<string:userId>", methods=['GET'])
 def get_course_logs(courseId, userId):
     log = CourseLog.query.filter_by(courseId=courseId, userId=userId).first()
     if log:
@@ -43,7 +43,7 @@ def get_course_logs(courseId, userId):
         "message": "Course log not found"
     }), 404
 
-@app.route("/courseLogs", methods=['POST'])
+@app.route("/", methods=['POST'])
 def add_or_update_course_log():
     data = request.get_json()
     courseId = data.get('courseId')
@@ -81,7 +81,7 @@ def add_or_update_course_log():
         "data": log.json()
     }), 200
 
-@app.route("/courseLogs/<string:courseId>/<string:userId>", methods=['DELETE'])
+@app.route("/<string:courseId>/<string:userId>", methods=['DELETE'])
 def delete_course_log(courseId, userId):
     log = CourseLog.query.filter_by(courseId=courseId, userId=userId).first()
     if log:
