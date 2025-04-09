@@ -1,0 +1,39 @@
+info:
+  description: Validates if a user can be enrolled.
+  title: Enroll Error Service API
+  version: 1.0.0
+openapi: 3.0.0
+paths:
+  /validate:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                courseCost:
+                  type: number
+                courseId:
+                  type: string
+                userId:
+                  type: string
+                walletId:
+                  type: string
+                walletPassword:
+                  type: string
+              type: object
+        required: true
+      responses:
+        '200':
+          description: Validation passed
+        '400':
+          description: Missing fields
+        '402':
+          description: Insufficient balance
+        '409':
+          description: Already enrolled
+        '500':
+          description: Internal error
+      summary: Validate user before enrollment
+servers:
+- url: http://localhost:5004

@@ -1,0 +1,36 @@
+info:
+  description: Logs and retrieves enrollments.
+  title: Enroll Log Service API
+  version: 1.0.0
+openapi: 3.0.0
+paths:
+  /enroll:
+    get:
+      responses:
+        '200':
+          description: List of enrollments
+        '500':
+          description: Database error
+      summary: Get all enrollments
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                courseId:
+                  type: string
+                userId:
+                  type: string
+              type: object
+        required: true
+      responses:
+        '201':
+          description: Enrollment logged
+        '400':
+          description: Missing fields
+        '500':
+          description: Database error
+      summary: Log a new enrollment
+servers:
+- url: http://localhost:3000
