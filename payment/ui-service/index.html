@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>E-Wallet Platform (Firebase Auth)</title> <script src="https://js.stripe.com/v3/"></script>
+  <title>E-Wallet Platform (Firebase Auth)</title>
+  <script src="https://js.stripe.com/v3/"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -52,7 +53,8 @@
 <body>
   <div class="container">
     <h1 class="mb-4 text-center">E-Wallet Platform</h1>
-    <div id="auth-status" class="alert alert-info text-center">Authenticating...</div> <div class="row">
+    <div id="auth-status" class="alert alert-info text-center">Authenticating...</div>
+    <div class="row">
       <div class="col-md-6">
         <div class="card">
           <div class="card-header bg-light">
@@ -60,7 +62,8 @@
           </div>
           <div class="card-body">
             <h2 class="text-center" id="balance">Loading...</h2>
-            <p class="text-center text-muted" id="wallet-info">Checking user...</p> <div class="d-grid">
+            <p class="text-center text-muted" id="wallet-info">Checking user...</p>
+            <div class="d-grid">
               <button id="refresh-balance-btn" class="btn btn-outline-primary auth-disabled" onclick="refreshBalance()">Refresh Balance</button>
             </div>
           </div>
@@ -103,16 +106,9 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-    import { firebaseConfig } from "../Login/config.js";
-
-    // --- Initialize Firebase ---
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    console.log("Firebase Initialized with imported config");
+    import { auth, db } from "./firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
 
     // --- Global variables to store authenticated user data ---
     let currentUser = null;
@@ -194,7 +190,7 @@
           console.error("Error fetching user data:", error);
           walletInfoEl.textContent = "Error loading wallet details.";
           balanceEl.textContent = "Error";
-           historyEl.innerHTML = '<div class="text-center text-danger">Error loading wallet details.</div>';
+          historyEl.innerHTML = '<div class="text-center text-danger">Error loading wallet details.</div>';
           setAuthControlsEnabled(false); // Keep controls disabled
         }
       } else {
@@ -229,7 +225,6 @@
           // *** USE REACTIVE DATA ***
           body: JSON.stringify({ WalletId: walletId, Password: walletPassword })
         });
-        // ... (rest of the function remains the same) ...
          if (!response.ok) { throw new Error(`API error: ${response.status}`); }
          const data = await response.json();
          console.log('Wallet API response:', data);
@@ -242,14 +237,14 @@
       }
     }
 
-    // Display formatted balance (unchanged)
+    // Display formatted balance
     function updateBalanceDisplay(balance) {
       if (balance === null) {
         balanceEl.textContent = 'Error'; // Simplified error display
         return;
       }
-       // Assuming balance is returned in main currency unit (e.g. dollars)
-       // If it's in cents, adjust calculation
+      // Assuming balance is returned in main currency unit (e.g. dollars)
+      // If it's in cents, adjust calculation
       const formattedBalance = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD'
@@ -257,7 +252,7 @@
       balanceEl.textContent = formattedBalance;
     }
 
-    // Refresh balance from API (unchanged in logic, calls modified fetchWalletBalance)
+    // Refresh balance from API
     window.refreshBalance = async function() { // Assign to window to make it accessible via onclick
       if (!walletId) { // Basic check
           balanceEl.textContent = 'Login first';
@@ -295,7 +290,6 @@
         const response = await fetch(`${PAYMENT_SERVICE_BASE_URL}/create-checkout-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          // *** USE REACTIVE DATA ***
           body: JSON.stringify({
             amount: parseInt(amount),
             currency: 'usd',
@@ -308,7 +302,6 @@
           }),
           signal: controller.signal
         });
-        // ... (rest of the function remains the same) ...
         clearTimeout(timeoutId);
         if (!response.ok) { throw new Error(`Server error: ${response.status}`); }
         const data = await response.json();
@@ -319,7 +312,6 @@
           window.location.href = data.checkout_url;
         } else { throw new Error('No checkout URL in response'); }
       } catch (err) {
-          // ... (error handling remains the same) ...
          let errorMessage = 'An error occurred';
          if (err.name === 'AbortError') { errorMessage = 'Request timed out. Please try again.'; }
          else if (err.message) { errorMessage = err.message; }
@@ -364,17 +356,17 @@
         } else {
              transactions = await response.json();
         }
-        // ... (rest of the function processing 'transactions' remains the same) ...
+        
         historyEl.innerHTML = ''; // Clear loading/previous content
         if (transactions.length === 0) {
           historyEl.innerHTML = '<div class="text-center text-muted">No transactions yet</div>';
         } else {
             const groupedTransactions = {};
-            transactions.forEach(tx => { /* ... grouping logic ... */
+            transactions.forEach(tx => {
                 if (!groupedTransactions[tx.payment_id]) { groupedTransactions[tx.payment_id] = []; }
                 groupedTransactions[tx.payment_id].push(tx);
             });
-            const uniqueTransactions = Object.values(groupedTransactions).map(group => { /* ... unique logic ... */
+            const uniqueTransactions = Object.values(groupedTransactions).map(group => {
                 const completedTransactions = group.filter(tx => tx.status === "completed");
                 if (completedTransactions.length > 0) {
                     completedTransactions.sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
@@ -384,10 +376,10 @@
                 return group[0];
             });
             uniqueTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-            uniqueTransactions.forEach(tx => { /* ... display logic ... */
+            uniqueTransactions.forEach(tx => {
                 const txDate = new Date(tx.created_at);
                 const sgDate = new Date(txDate.getTime() + (8 * 60 * 60 * 1000));
-                const formattedDate = sgDate.toLocaleString('en-SG', { /*...formatting options...*/ day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                const formattedDate = sgDate.toLocaleString('en-SG', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
                 const transactionHtml = `
                   <div class="border-bottom pb-2 mb-2">
                     <div class="d-flex justify-content-between">
@@ -408,14 +400,13 @@
       }
     }
 
-    // Process URL parameters (logic remains largely same, but called *after* auth)
+    // Process URL parameters
     function processUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const historyRefreshDelay = 3000;
       const statusElement = document.getElementById('payment-status'); // Define here
 
       if (urlParams.has('success')) {
-        // ... (Success logic as before, using global PAYMENT_SERVICE_BASE_URL) ...
         console.log("Processing successful payment redirect...");
         window.history.replaceState({}, document.title, window.location.pathname);
         const sessionId = localStorage.getItem('session_id');
@@ -442,7 +433,7 @@
                    if (statusElement.innerHTML.includes('successful') || statusElement.innerHTML.includes('delayed')) { statusElement.innerHTML = ''; }
                }, historyRefreshDelay);
             });
-        } else if (!sessionId) { /* ... no session id case ... */
+        } else if (!sessionId) {
              console.warn("Success redirect, but no session_id found in local storage.");
              console.log(`Refreshing balance and history after ${historyRefreshDelay}ms delay (no session ID).`);
              setTimeout(() => {
@@ -453,11 +444,10 @@
                   }
                  if (statusElement.innerHTML.includes('successful')) { statusElement.innerHTML = ''; }
              }, historyRefreshDelay);
-        } else { /* ... already processed case ... */ console.log(`Session ${sessionId} already processed.`); }
+        } else { console.log(`Session ${sessionId} already processed.`); }
         localStorage.removeItem('session_id'); localStorage.removeItem('topup_amount');
 
       } else if (urlParams.has('canceled')) {
-        // ... (Cancel logic as before) ...
          console.log("Processing canceled payment redirect...");
          window.history.replaceState({}, document.title, window.location.pathname);
          statusElement.innerHTML = '<div class="alert alert-warning">Payment was canceled.</div>';
@@ -492,7 +482,6 @@
     // Initial setup: Disable buttons until auth is confirmed
     setAuthControlsEnabled(false);
     console.log("Initial control state set to disabled.");
-
   </script>
 </body>
 </html>
