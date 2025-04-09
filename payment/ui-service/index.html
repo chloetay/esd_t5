@@ -106,23 +106,13 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
     import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
-
-    // --- Assume firebaseConfig is defined here or imported ---
-    // Example: Replace with your actual config
-     const firebaseConfig = {
-       apiKey: "YOUR_API_KEY",
-       authDomain: "YOUR_AUTH_DOMAIN",
-       projectId: "YOUR_PROJECT_ID",
-       storageBucket: "YOUR_STORAGE_BUCKET",
-       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-       appId: "YOUR_APP_ID"
-     };
+    import { firebaseConfig } from "../Login/config.js";
 
     // --- Initialize Firebase ---
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    console.log("Firebase Initialized");
+    console.log("Firebase Initialized with imported config");
 
     // --- Global variables to store authenticated user data ---
     let currentUser = null;
@@ -492,7 +482,6 @@
     }
 
     // --- Make functions globally accessible for inline onclick handlers ---
-    // (Not ideal, better to use Vue/event listeners, but works with current HTML)
     window.fetchWalletBalance = fetchWalletBalance;
     window.updateBalanceDisplay = updateBalanceDisplay;
     window.refreshBalance = refreshBalance;
