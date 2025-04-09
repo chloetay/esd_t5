@@ -12,7 +12,7 @@ services:
         path_handling: v1
 
   - name: ui-service
-    url: http://ui-service:3000
+    url: http://ui-service:3003
     routes:
       - name: ui-routes
         paths:

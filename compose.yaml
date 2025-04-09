@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   deps-installer:
     build:
@@ -82,6 +80,82 @@ services:
     networks:
       - learning-network
 
+  kong:
+    image: kong:latest
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
+      - KONG_PROXY_ACCESS_LOG=/dev/stdout
+      - KONG_ADMIN_ACCESS_LOG=/dev/stdout
+      - KONG_PROXY_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_ERROR_LOG=/dev/stderr
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
+    ports:
+      - "9000:8000"
+      - "8445:8443"
+      - "8002:8001"
+      - "8446:8444"
+    volumes:
+      - ./payment/kong.yml:/etc/kong/kong.yml
+    networks:
+      - learning-network
+    depends_on:
+      - payment-service
+      - ui-service
+
+
+  mysql:
+    image: mysql:5.7
+    platform: linux/amd64
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: course
+      MYSQL_USER: is213
+      MYSQL_PASSWORD: password
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./backend/Course/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/Course/db:/docker-entrypoint-initdb.d
+      - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
+      - ./init.sql:/docker-entrypoint-initdb.d/00-global-init.sql         
+    networks:
+      - learning-network
+
+
+  payment-service:
+    build:
+      context: ./payment/payment-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8000"
+    environment:
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - API_GATEWAY_URL=http://kong:8000
+      - TRANSACTION_LOGS_URL=http://transaction-logs-service:8005/api/logs
+    volumes:
+      - ./payment/payment-service:/app
+    networks:
+      - learning-network
+
+
+  pgdb:
+    image: postgres
+    container_name: pgdb
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password123!
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdb_data:/var/lib/postgresql/data
+      - ./initPG.sql:/docker-entrypoint-initdb.d/initPG.sql
+    networks:
+      - learning-network
+
   php-notes:
     build:
       context: ./backend/Notes
@@ -106,6 +180,59 @@ services:
     networks:
       - learning-network
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - learning-network
+
+  take-course:
+    build:
+      context: ./backend/TakeCourse
+      dockerfile: Dockerfile
+    container_name: take-course
+    ports:
+      - "5001:5001"
+    environment:
+      - COURSE_SERVICE_URL=http://course:5000
+      - COURSE_LOGS_URL=http://course-logs:5003
+    depends_on:
+      - course
+      - course-logs
+    networks:
+      - learning-network
+
+  transaction-logs-service:
+    build:
+      context: ./payment/transaction-logs-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=postgresql://postgres:Password123!@pgdb:5432/transactionlogs
+    volumes:
+      - ./payment/transaction-logs-service:/app
+    networks:
+      - learning-network
+    depends_on:
+      - pgdb
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8005", "--reload"]
+
+
+  ui-service:
+    build:
+      context: ./payment/ui-service
+      dockerfile: Dockerfile
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./payment/ui-service:/app
+    networks:
+      - learning-network
+      
   # take-course (old2):
   #     build:
   #       context: ./backend/TakeCourse
@@ -125,64 +252,6 @@ services:
   #     networks:
   #       - learning-network
 
-  take-course:
-    build:
-      context: ./backend/TakeCourse
-      dockerfile: Dockerfile
-    container_name: take-course
-    ports:
-      - "5001:5001"
-    environment:
-      - COURSE_SERVICE_URL=http://course:5000
-      - COURSE_LOGS_URL=http://course-logs:5003
-    depends_on:
-      - course
-      - course-logs
-    networks:
-      - learning-network
-
-      
-  pgdb:
-    image: postgres
-    container_name: pgdb
-    environment:
-      POSTGRES_DB: enrolllog
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Password123!
-    ports:
-      - "5433:5432"
-    networks:
-      - learning-network
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    networks:
-      - learning-network
-
-  mysql:
-    image: mysql:5.7
-    platform: linux/amd64
-    container_name: mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: course
-      MYSQL_USER: is213
-      MYSQL_PASSWORD: password
-    ports:
-      - "3307:3306"
-    volumes:
-      - ./backend/Course/db/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./backend/Course/db:/docker-entrypoint-initdb.d
-      - ./backend/CourseLogs/db:/docker-entrypoint-initdb.d
-      - ./init.sql:/docker-entrypoint-initdb.d/00-global-init.sql         
-    networks:
-      - learning-network
-
   # takecourse (old):
   #   build:
   #     context: ./takecourse
@@ -201,8 +270,8 @@ services:
   #   networks:
   #     - learning-network
 
-
-
-
 networks:
   learning-network:
+
+volumes:
+  pgdb_data:

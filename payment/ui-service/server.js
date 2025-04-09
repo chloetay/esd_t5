@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 3000;
+const PORT = 3003;
 
 // Simple HTTP server that serves the index.html file
 const server = http.createServer((req, res) => {

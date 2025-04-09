@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@transactionlogs_db:5432/transactionlogs")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Password123!@pgdb:5432/transactionlogs")
 
 # Create the SQLAlchemy engine and session
 engine = create_engine(DATABASE_URL)
