@@ -38,6 +38,15 @@ services:
         strip_path: false
         path_handling: v1
 
+  - name: quiz-service
+    url: http://quiz:5005
+    routes:
+      - name: quiz-route
+        paths:
+          - /api/quiz
+        strip_path: true
+        path_handling: v1
+
 plugins:
   - name: cors
     config:
