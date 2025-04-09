@@ -24,7 +24,7 @@ def home():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@app.route("/quiz/<string:courseId>/<string:quizId>", methods=["GET"])
+@app.route("/<string:courseId>/<string:quizId>", methods=["GET"])
 def get_quiz(courseId: str, quizId: str):
     quiz = collection.find_one({
         "courseId": courseId,
@@ -38,7 +38,7 @@ def get_quiz(courseId: str, quizId: str):
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@app.route("/quiz", methods=["GET"])
+@app.route("/allQuiz", methods=["GET"])
 def get_all_quizzes():
     quizzes = list(collection.find({}, {"_id": 0}))
     if not quizzes:
