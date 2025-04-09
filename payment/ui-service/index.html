@@ -106,9 +106,27 @@
   </div>
 
   <script type="module">
-    import { auth, db } from "http://localhost:8080/Login/firebase.js";
-    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    // Import Firebase modules
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+
+    // Firebase configuration directly in the file
+    const firebaseConfig = {
+      apiKey: "AIzaSyDysapBKF3HQv7GG4yjcreh1sXp8aDyNA4",
+      authDomain: "esd-team5.firebaseapp.com",
+      projectId: "esd-team5",
+      storageBucket: "esd-team5.firebasestorage.app",
+      messagingSenderId: "623947543588",
+      appId: "1:623947543588:web:810bf0100abba3ce7994b1",
+      measurementId: "G-END9VCHCZV"
+    };
+
+    // Initialize Firebase directly
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    console.log("Firebase initialized directly in HTML");
 
     // --- Global variables to store authenticated user data ---
     let currentUser = null;
@@ -237,14 +255,14 @@
       }
     }
 
-    // Display formatted balance
+    // Display formatted balance (unchanged)
     function updateBalanceDisplay(balance) {
       if (balance === null) {
         balanceEl.textContent = 'Error'; // Simplified error display
         return;
       }
-      // Assuming balance is returned in main currency unit (e.g. dollars)
-      // If it's in cents, adjust calculation
+       // Assuming balance is returned in main currency unit (e.g. dollars)
+       // If it's in cents, adjust calculation
       const formattedBalance = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD'
@@ -252,7 +270,7 @@
       balanceEl.textContent = formattedBalance;
     }
 
-    // Refresh balance from API
+    // Refresh balance from API (unchanged in logic, calls modified fetchWalletBalance)
     window.refreshBalance = async function() { // Assign to window to make it accessible via onclick
       if (!walletId) { // Basic check
           balanceEl.textContent = 'Login first';
@@ -290,6 +308,7 @@
         const response = await fetch(`${PAYMENT_SERVICE_BASE_URL}/create-checkout-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          // *** USE REACTIVE DATA ***
           body: JSON.stringify({
             amount: parseInt(amount),
             currency: 'usd',
@@ -400,13 +419,14 @@
       }
     }
 
-    // Process URL parameters
+    // Process URL parameters (logic remains largely same, but called *after* auth)
     function processUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
       const historyRefreshDelay = 3000;
       const statusElement = document.getElementById('payment-status'); // Define here
 
       if (urlParams.has('success')) {
+        // ... (Success logic as before, using global PAYMENT_SERVICE_BASE_URL) ...
         console.log("Processing successful payment redirect...");
         window.history.replaceState({}, document.title, window.location.pathname);
         const sessionId = localStorage.getItem('session_id');
@@ -433,7 +453,7 @@
                    if (statusElement.innerHTML.includes('successful') || statusElement.innerHTML.includes('delayed')) { statusElement.innerHTML = ''; }
                }, historyRefreshDelay);
             });
-        } else if (!sessionId) {
+        } else if (!sessionId) { /* ... no session id case ... */
              console.warn("Success redirect, but no session_id found in local storage.");
              console.log(`Refreshing balance and history after ${historyRefreshDelay}ms delay (no session ID).`);
              setTimeout(() => {
@@ -444,10 +464,11 @@
                   }
                  if (statusElement.innerHTML.includes('successful')) { statusElement.innerHTML = ''; }
              }, historyRefreshDelay);
-        } else { console.log(`Session ${sessionId} already processed.`); }
+        } else { /* ... already processed case ... */ console.log(`Session ${sessionId} already processed.`); }
         localStorage.removeItem('session_id'); localStorage.removeItem('topup_amount');
 
       } else if (urlParams.has('canceled')) {
+        // ... (Cancel logic as before) ...
          console.log("Processing canceled payment redirect...");
          window.history.replaceState({}, document.title, window.location.pathname);
          statusElement.innerHTML = '<div class="alert alert-warning">Payment was canceled.</div>';
