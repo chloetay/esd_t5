@@ -1,28 +1,33 @@
+openapi: 3.0.0
 info:
-  description: Validates if a user can be enrolled.
   title: Enroll Error Service API
   version: 1.0.0
-openapi: 3.0.0
+  description: Validates if a user can be enrolled.
+
+servers:
+  - url: http://localhost:5004
+
 paths:
   /validate:
     post:
+      summary: Validate user before enrollment
       requestBody:
+        required: true
         content:
           application/json:
             schema:
+              type: object
               properties:
-                courseCost:
-                  type: number
-                courseId:
-                  type: string
                 userId:
                   type: string
                 walletId:
                   type: string
                 walletPassword:
                   type: string
-              type: object
-        required: true
+                courseId:
+                  type: string
+                courseCost:
+                  type: number
       responses:
         '200':
           description: Validation passed
@@ -34,6 +39,5 @@ paths:
           description: Already enrolled
         '500':
           description: Internal error
-      summary: Validate user before enrollment
-servers:
-- url: http://localhost:5004
+        '502':
+          description: Error calling external service
