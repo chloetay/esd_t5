@@ -5,60 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quiz</title>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+    </style>
   </head>
-  <body>
-    <div id="app">
-      <section v-if="loading">
-        <h2>Loading quiz, please wait...</h2>
+
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div id="app" class="w-full max-w-2xl bg-white rounded-2xl shadow-md p-6 space-y-6">
+      <!-- Loading -->
+      <section v-if="loading" class="text-center">
+        <h2 class="text-xl font-semibold text-gray-700">Loading quiz, please wait...</h2>
       </section>
 
-      <section v-if="error">
-        <h2>{{ error }}</h2>
-        <button @click="goBack">Back to Home</button>
+      <!-- Error -->
+      <section v-if="error" class="text-center space-y-4">
+        <h2 class="text-xl font-semibold text-red-600">{{ error }}</h2>
+        <button
+          @click="goBack"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+        >
+          Back to Home
+        </button>
       </section>
 
+      <!-- Quiz Question -->
       <section v-if="hasQuestions() && !error && !loading">
-        <h1>
+        <h1 class="text-lg font-semibold text-gray-800 mb-2">
           Question {{ currentQuestionIndex + 1 }} / {{ questions.length }}
         </h1>
-        <h2>{{ questions[currentQuestionIndex].question }}</h2>
+        <h2 class="text-gray-700 mb-4 text-base">
+          {{ questions[currentQuestionIndex].question }}
+        </h2>
 
-        <div>
+        <div class="space-y-2 mb-6">
           <label
             v-for="(option, key) in questions[currentQuestionIndex].options"
             :key="key"
+            class="flex items-center space-x-2 text-sm text-gray-600"
           >
-            <input type="radio" :value="key" v-model="selectedOption" />
-            {{ option }}
+            <input
+              type="radio"
+              :value="key"
+              v-model="selectedOption"
+              class="accent-blue-600"
+            />
+            <span>{{ option }}</span>
           </label>
         </div>
 
         <button
           v-if="selectedOption !== null && !submitted"
           @click="submitOption"
+          class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
         >
           Submit Answer
         </button>
       </section>
 
-      <section v-if="submitted">
-        <div v-if="isCorrect">
-          <h4>You are Correct! Keep up the good work!</h4>
+      <!-- Result -->
+      <section v-if="submitted" class="text-center space-y-4">
+        <div
+          v-if="isCorrect"
+          class="text-green-700 bg-green-100 border border-green-300 p-4 rounded-lg"
+        >
+          <h4 class="font-semibold">✅ You are Correct! Keep up the good work!</h4>
         </div>
-        <div v-else>
-          <h4>
-            Oh no! The correct answer is {{
-            questions[currentQuestionIndex].correctAnswer }}.
+        <div
+          v-else
+          class="text-red-700 bg-red-100 border border-red-300 p-4 rounded-lg"
+        >
+          <h4 class="font-semibold">
+            ❌ Oh no! The correct answer is:
+            {{ questions[currentQuestionIndex].correctAnswer }}
           </h4>
         </div>
 
-        <button
-          v-if="currentQuestionIndex === questions.length - 1"
-          @click="finishQuiz"
-        >
-          Finish Quiz
-        </button>
-        <button v-else @click="nextQuestion">Next Question</button>
+        <div class="flex justify-center gap-4">
+          <button
+            v-if="currentQuestionIndex === questions.length - 1"
+            @click="finishQuiz"
+            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            Finish Quiz
+          </button>
+          <button
+            v-else
+            @click="nextQuestion"
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Next Question
+          </button>
+        </div>
       </section>
     </div>
 
@@ -92,8 +136,7 @@
               const res = await fetch(
                 `http://localhost:9000/api/quiz/${this.courseId}/${this.quizId}`
               );
-              if (!res.ok)
-                throw new Error("Quiz not found or failed to fetch.");
+              if (!res.ok) throw new Error("Quiz not found or failed to fetch.");
               const data = await res.json();
 
               this.questions = data.questions.map((q) => ({
@@ -135,7 +178,6 @@
             }
 
             try {
-              // 1. POST to course logs
               const postRes = await fetch("http://localhost:5003/courseLogs", {
                 method: "POST",
                 headers: {
@@ -150,7 +192,6 @@
 
               if (!postRes.ok) throw new Error("Failed to log completion");
 
-              // 2. GET next item from takecourse
               const takeRes = await fetch(
                 `http://localhost:5001/takeCourse/${this.courseId}/${userId}`
               );
