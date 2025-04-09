@@ -1,72 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="UTF-8" />
     <title>Take Course</title>
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const params = new URLSearchParams(window.location.search);
-        const courseId = params.get("courseId");
-        const userId = localStorage.getItem("userId");
+        document.addEventListener("DOMContentLoaded", () => {
+            const params = new URLSearchParams(window.location.search);
+            const courseId = params.get("courseId");
+            const userId = localStorage.getItem("userId");
 
-        const titleEl = document.getElementById("course-title");
-        const descEl = document.getElementById("course-description");
-        const btn = document.getElementById("take-btn");
+            const titleEl = document.getElementById("course-title");
+            const descEl = document.getElementById("course-description");
+            const btn = document.getElementById("take-btn");
 
-        if (!courseId) {
-          titleEl.innerText = "Missing courseId in URL.";
-          btn.style.display = "none";
-          return;
-        }
-
-        // 1. Load course info from course service
-        fetch(`http://localhost:5000/course/${courseId}`)
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.code === 200) {
-              titleEl.innerText = data.data.courseName;
-              descEl.innerText = data.data.courseDescription;
-            } else {
-              titleEl.innerText = "Course not found.";
-              btn.style.display = "none";
+            if (!courseId) {
+                titleEl.innerText = "Missing courseId in URL.";
+                btn.style.display = "none";
+                return;
             }
-          })
-          .catch((err) => {
-            console.error("Error fetching course info:", err);
-            titleEl.innerText = "Failed to load course.";
-          });
 
-        // 2. On button click, call takecourse microservice
-        btn.addEventListener("click", () => {
-          if (!userId) {
-            alert("No userId found. Please log in.");
-            return;
-          }
+            // 1. Load course info from course service
+            fetch(`http://localhost:5000/course/${courseId}`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.code === 200) {
+                        titleEl.innerText = data.data.courseName;
+                        descEl.innerText = data.data.courseDescription;
+                    } else {
+                        titleEl.innerText = "Course not found.";
+                        btn.style.display = "none";
+                    }
+                })
+                .catch((err) => {
+                    console.error("Error fetching course info:", err);
+                    titleEl.innerText = "Failed to load course.";
+                });
 
-          fetch(`http://localhost:5001/takeCourse/${courseId}/${userId}`)
-            .then((res) => res.json())
-            .then((data) => {
-              if (data.code === 200 && data.data?.redirectUrl) {
-                window.location.href = data.data.redirectUrl;
-              } else if (data.message === "Course completed") {
-                alert("🎉 You've completed this course!");
-              } else {
-                alert("Unexpected error. Please try again.");
-              }
-            })
-            .catch((err) => {
-              console.error("Failed to start course:", err);
-              alert("An error occurred.");
+            // 2. On button click, call takecourse microservice
+            btn.addEventListener("click", () => {
+                if (!userId) {
+                    alert("No userId found. Please log in.");
+                    return;
+                }
+
+                fetch(`http://localhost:5001/takeCourse/${courseId}/${userId}`)
+                    .then((res) => res.json())
+                    .then((data) => {
+                        if (data.code === 200 && data.data?.redirectUrl) {
+                            // Instead of redirecting to some URL from backend,
+                            // you can now simply go to lesson.html with courseId
+                            window.location.href = `lesson.html?courseId=${courseId}`;
+                        } else if (data.message === "Course completed") {
+                            alert("🎉 You've completed this course!");
+                        } else {
+                            alert("Unexpected error. Please try again.");
+                        }
+                    })
+                    .catch((err) => {
+                        console.error("Failed to start course:", err);
+                        alert("An error occurred.");
+                    });
             });
         });
-      });
     </script>
-  </head>
-  <body>
+</head>
+
+<body>
     <div>
-      <h1 id="course-title">Loading course...</h1>
-      <p id="course-description"></p>
-      <button id="take-btn">Take Course</button>
+        <h1 id="course-title">Loading course...</h1>
+        <p id="course-description"></p>
+        <button id="take-btn">Take Course</button>
     </div>
-  </body>
+</body>
+
 </html>
