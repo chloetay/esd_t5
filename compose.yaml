@@ -222,16 +222,16 @@ services:
     command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8005", "--reload"]
 
 
-  ui-service:
-    build:
-      context: ./payment/ui-service
-      dockerfile: Dockerfile
-    ports:
-      - "3003:3003"
-    volumes:
-      - ./payment/ui-service:/app
-    networks:
-      - learning-network
+  # ui-service:
+  #   build:
+  #     context: ./payment/ui-service
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3003:3003"
+  #   volumes:
+  #     - ./payment/ui-service:/app
+  #   networks:
+  #     - learning-network
       
   # take-course (old2):
   #     build:

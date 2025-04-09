@@ -11,14 +11,14 @@ services:
         strip_path: true
         path_handling: v1
 
-  - name: ui-service
-    url: http://ui-service:3003
-    routes:
-      - name: ui-routes
-        paths:
-          - /
-        strip_path: false
-        path_handling: v1
+  # - name: ui-service
+  #   url: http://ui-service:3003
+  #   routes:
+  #     - name: ui-routes
+  #       paths:
+  #         - /
+  #       strip_path: false
+  #       path_handling: v1
 
   - name: wallet-service
     url: https://personal-rrfqkpux.outsystemscloud.com/Wallet/rest/Wallet

@@ -40,6 +40,7 @@ class PaymentIntentRequest(BaseModel):
     amount: int
     currency: str
     wallet_id: Optional[str] = None
+    wallet_password: Optional[str] = None  # Add wallet_password field
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 class PaymentResponse(BaseModel):
@@ -251,6 +252,7 @@ async def update_wallet_balance(payment_record, amount_in_cents):
     try:
         wallet_id = payment_record.payment_metadata.get('wallet_id', 23)  # Default if not found
         email = payment_record.payment_metadata.get('email')
+        wallet_password = payment_record.payment_metadata.get('wallet_password', "hello")  # Get password from metadata with fallback
         
         if email is None:
             email = "default@example.com"
@@ -265,7 +267,7 @@ async def update_wallet_balance(payment_record, amount_in_cents):
         
         wallet_update_payload = {
             "WalletId": int(wallet_id) if isinstance(wallet_id, str) and wallet_id.isdigit() else wallet_id,
-            "Password": "hello",
+            "Password": wallet_password,  # Use password from metadata
             "ChangeAmount": amount_in_wallet_format,
             "Email": email
         }
@@ -363,10 +365,19 @@ async def create_checkout(payload: PaymentIntentRequest, request: Request):
     Create a Stripe Checkout session for simple payment processing.
     """
     try:
-        success_url = f"http://localhost:9000?success=true"
-        cancel_url = f"http://localhost:9000?canceled=true"
+        success_url = f"http://localhost:8080/frontend/index.html?success=true"
+        cancel_url = f"http://localhost:8080/frontend/index.html?canceled=true"
 
         logger.info(f"Payload received for Stripe session: {payload.dict()}")
+        
+        # Create a copy of metadata to avoid modifying the original
+        metadata = dict(payload.metadata) if payload.metadata else {}
+        
+        # Add wallet_password to metadata if provided
+        if payload.wallet_password:
+            metadata["wallet_password"] = payload.wallet_password
+            logger.info("Added wallet_password to metadata")
+        
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=["card"],
             line_items=[
@@ -385,9 +396,9 @@ async def create_checkout(payload: PaymentIntentRequest, request: Request):
             mode="payment",
             success_url=success_url,
             cancel_url=cancel_url,
-            metadata=payload.metadata or {},
+            metadata=metadata,
             client_reference_id=payload.wallet_id,
-            customer_email=payload.metadata.get("email") if payload.metadata and "email" in payload.metadata else None,
+            customer_email=metadata.get("email") if metadata and "email" in metadata else None,
             customer_creation="always"
         )
         
@@ -401,7 +412,7 @@ async def create_checkout(payload: PaymentIntentRequest, request: Request):
             currency=payload.currency,
             status="pending",
             wallet_id=payload.wallet_id,
-            payment_metadata=payload.metadata
+            payment_metadata=metadata
         )
         payment_records[payment_id] = payment_record
         

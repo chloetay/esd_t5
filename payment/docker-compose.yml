@@ -24,16 +24,16 @@ services:
       - ui-service
 
   # UI Service (Python Flask)
-  ui-service:
-    build:
-      context: ./ui-service
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./ui-service:/app
-    networks:
-      - payment-network
+  # ui-service:
+  #   build:
+  #     context: ./ui-service
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./ui-service:/app
+  #   networks:
+  #     - payment-network
 
   # Transaction Logs Service
   transaction-logs-service:

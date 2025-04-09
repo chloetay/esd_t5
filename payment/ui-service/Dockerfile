@@ -1,13 +1,13 @@
-FROM node:16-alpine
+# FROM node:16-alpine
 
-WORKDIR /app
+# WORKDIR /app
 
-# Copy application files
-COPY index.html .
-COPY server.js .
+# # Copy application files
+# COPY index.html .
+# COPY server.js .
 
-# Expose port
-EXPOSE 3000
+# # Expose port
+# EXPOSE 3000
 
-# Start the application
-CMD ["node", "server.js"]
+# # Start the application
+# CMD ["node", "server.js"]

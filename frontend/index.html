@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Wallet Platform (Firebase Auth)</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      padding-top: 2rem;
+    }
+    .container {
+      max-width: 800px;
+    }
+    .card {
+      margin-bottom: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .btn-primary {
+      background-color: #635BFF;
+      border-color: #635BFF;
+    }
+    .btn-primary:hover {
+      background-color: #5147D1;
+      border-color: #5147D1;
+    }
+    #payment-history {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .loading-spinner {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+      border: 0.2em solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spinner-border .75s linear infinite;
+    }
+    @keyframes spinner-border {
+      to { transform: rotate(360deg); }
+    }
+    .auth-disabled {
+      pointer-events: none;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4 text-center">E-Wallet Platform</h1>
+    <div id="auth-status" class="alert alert-info text-center">Authenticating...</div>
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Wallet Balance</h5>
+          </div>
+          <div class="card-body">
+            <h2 class="text-center" id="balance">Loading...</h2>
+            <p class="text-center text-muted" id="wallet-info">Checking user...</p>
+            <div class="d-grid">
+              <button id="refresh-balance-btn" class="btn btn-outline-primary auth-disabled" onclick="refreshBalance()">Refresh Balance</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">Top Up</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="amount" class="form-label">Amount to Top Up:</label>
+              <select id="amount" class="form-select">
+                <option value="1000">$10.00</option>
+                <option value="2000">$20.00</option>
+                <option value="5000">$50.00</option>
+              </select>
+            </div>
+            <div class="d-grid">
+              <button id="checkout-btn" class="btn btn-primary auth-disabled" onclick="handleCheckout()">Proceed to Checkout</button>
+            </div>
+            <div id="payment-status" class="mt-3 text-center"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header bg-light">
+        <h5 class="mb-0">Recent Transactions</h5>
+      </div>
+      <div class="card-body">
+        <div id="payment-history">
+          <div class="text-center text-muted">Waiting for user login...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Import Firebase modules from external file
+    import { auth, db } from "../LogIn/firebase.js";
+    import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+    import { getDoc, doc } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+    
+    // Global variables
+    let userId = "";
+    let userEmail = "";
+    let walletId = "";
+    let walletPassword = "";
+
+    // DOM Elements
+    const authStatusEl = document.getElementById('auth-status');
+    const balanceEl = document.getElementById('balance');
+    const walletInfoEl = document.getElementById('wallet-info');
+    const historyEl = document.getElementById('payment-history');
+    const refreshBtn = document.getElementById('refresh-balance-btn');
+    const checkoutBtn = document.getElementById('checkout-btn');
+
+    // API URLs (All routed through Kong)
+    const KONG_BASE_URL = 'http://localhost:9000';
+    const PAYMENT_SERVICE_BASE_URL = `${KONG_BASE_URL}/api/payments`;
+    const WALLET_API_URL = `${KONG_BASE_URL}/api/wallet/GetWallet`;
+
+    // Utility function to enable/disable buttons
+    function setAuthControlsEnabled(enabled) {
+      if (enabled) {
+        refreshBtn.classList.remove('auth-disabled');
+        checkoutBtn.classList.remove('auth-disabled');
+      } else {
+        refreshBtn.classList.add('auth-disabled');
+        checkoutBtn.classList.add('auth-disabled');
+      }
+    }
+
+    // Firebase Auth Listener
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        userId = user.uid;
+        userEmail = user.email;
+        
+        authStatusEl.className = 'alert alert-success text-center';
+        authStatusEl.textContent = `Logged in as ${userEmail}`;
+        walletInfoEl.textContent = 'Loading wallet details...';
+
+        try {
+          // Get walletId from Firestore
+          const userRef = doc(db, "users", userId);
+          const userSnap = await getDoc(userRef);
+          
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            
+            if (userData.walletId) {
+              walletId = userData.walletId;
+              walletPassword = localStorage.getItem("walletPassword") || "";
+              
+              if (walletId && walletPassword) {
+                console.log(`Wallet ID: ${walletId}, Password Retrieved: ${!!walletPassword}`);
+                walletInfoEl.textContent = `Wallet ID: ${walletId}`;
+                setAuthControlsEnabled(true);
+                
+                // Process URL parameters and load initial data
+                processUrlParameters();
+              } else {
+                showError("Missing Wallet Password.");
+              }
+            } else {
+              showError("No walletId found for this user.");
+            }
+          } else {
+            showError("User record not found.");
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          showError("Error loading wallet details.");
+        }
+      } else {
+        // User is signed out
+        resetUserData();
+        window.location.href = "../LogIn/login.html";
+      }
+    });
+
+    // Helper function to display errors
+    function showError(message) {
+      console.error(message);
+      walletInfoEl.textContent = `Error: ${message}`;
+      balanceEl.textContent = "Error";
+      historyEl.innerHTML = `<div class="text-center text-danger">Cannot load history (${message})</div>`;
+      setAuthControlsEnabled(false);
+    }
+
+    // Reset user data on logout
+    function resetUserData() {
+      userId = "";
+      userEmail = "";
+      walletId = "";
+      walletPassword = "";
+      authStatusEl.className = 'alert alert-warning text-center';
+      authStatusEl.textContent = 'You are not logged in.';
+      balanceEl.textContent = '-';
+      walletInfoEl.textContent = 'Please log in.';
+      historyEl.innerHTML = '<div class="text-center text-muted">Please log in to view history.</div>';
+      setAuthControlsEnabled(false);
+    }
+
+    // Fetch wallet balance
+    async function fetchWalletBalance() {
+      if (!walletId || !walletPassword) {
+        return null;
+      }
+      
+      try {
+        const response = await fetch(WALLET_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ WalletId: walletId, Password: walletPassword })
+        });
+        
+        if (!response.ok) { 
+          throw new Error(`API error: ${response.status}`); 
+        }
+        
+        const data = await response.json();
+        
+        // Handle different response formats
+        if (data && typeof data.Balance !== 'undefined') { 
+          return data.Balance; 
+        } else if (data && typeof data.balance !== 'undefined') { 
+          return data.balance; 
+        } else { 
+          console.error('Unexpected API response format:', data); 
+          return null; 
+        }
+      } catch (error) {
+        console.error('Error fetching wallet balance:', error);
+        return null;
+      }
+    }
+
+    // Display formatted balance
+    function updateBalanceDisplay(balance) {
+      if (balance === null) {
+        balanceEl.textContent = 'Error';
+        return;
+      }
+      
+      const formattedBalance = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      }).format(balance);
+      
+      balanceEl.textContent = formattedBalance;
+    }
+
+    // Refresh balance from API
+    window.refreshBalance = async function() {
+      if (!walletId) {
+        balanceEl.textContent = 'Login first';
+        return;
+      }
+      
+      balanceEl.innerHTML = '<div class="loading-spinner"></div> Loading...';
+      const balance = await fetchWalletBalance();
+      updateBalanceDisplay(balance);
+    }
+
+    // Handle checkout process
+    window.handleCheckout = async function() {
+      if (!walletId || !userEmail || !walletPassword) {
+        document.getElementById('payment-status').innerHTML = `<div class="alert alert-danger">Login required or user data missing.</div>`;
+        return;
+      }
+
+      const amount = document.getElementById('amount').value;
+      const statusElement = document.getElementById('payment-status');
+      const checkoutButton = document.getElementById('checkout-btn');
+
+      statusElement.innerHTML = '<div class="loading-spinner"></div> Processing...';
+      checkoutButton.disabled = true;
+      checkoutButton.classList.add('auth-disabled');
+
+      // Clear previous session data
+      localStorage.removeItem('session_id');
+      localStorage.removeItem('last_payment_id');
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(`${PAYMENT_SERVICE_BASE_URL}/checkout-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: parseInt(amount),
+            currency: 'usd',
+            wallet_id: walletId.toString(),
+            wallet_password: walletPassword,
+            metadata: {
+              product_type: 'wallet_topup',
+              wallet_id: walletId,
+              email: userEmail,
+              wallet_password: walletPassword
+            }
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) { 
+          throw new Error(`Server error: ${response.status}`); 
+        }
+        
+        const data = await response.json();
+        
+        if (data.checkout_url) {
+          localStorage.setItem('last_payment_id', data.payment_id);
+          localStorage.setItem('session_id', data.session_id);
+          localStorage.setItem('topup_amount', amount);
+          window.location.href = data.checkout_url;
+        } else { 
+          throw new Error('No checkout URL in response'); 
+        }
+      } catch (err) {
+        let errorMessage = 'An error occurred';
+        
+        if (err.name === 'AbortError') { 
+          errorMessage = 'Request timed out. Please try again.'; 
+        } else if (err.message) { 
+          errorMessage = err.message; 
+        }
+        
+        statusElement.innerHTML = `<div class="alert alert-danger">${errorMessage}</div>`;
+        console.error('Checkout error:', err);
+        setTimeout(() => { statusElement.innerHTML = ''; }, 5000);
+      } finally {
+        // Re-enable button if user is still valid
+        if (walletId) {
+          checkoutButton.disabled = false;
+          checkoutButton.classList.remove('auth-disabled');
+        }
+      }
+    }
+
+    // Load transaction history
+    async function loadTransactionHistory() {
+      if (!walletId) {
+        historyEl.innerHTML = '<div class="text-center text-danger">Cannot load history (Wallet ID missing).</div>';
+        return;
+      }
+      
+      historyEl.innerHTML = '<div class="text-center"><div class="loading-spinner"></div> Loading history...</div>';
+
+      try {
+        const response = await fetch(`${KONG_BASE_URL}/api/transaction-logs/user/${walletId}`, {
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        
+        let transactions;
+
+        if (!response.ok) {
+          const fallbackResponse = await fetch(`${KONG_BASE_URL}/api/transaction-logs/user/${walletId}`, {
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+          });
+          
+          if (!fallbackResponse.ok) {
+            throw new Error(`Error fetching history: ${response.status} & ${fallbackResponse.status}`);
+          }
+          
+          transactions = await fallbackResponse.json();
+        } else {
+          transactions = await response.json();
+        }
+        
+        displayTransactions(transactions);
+      } catch (error) {
+        console.error('Error loading transaction history:', error);
+        historyEl.innerHTML = '<div class="text-center text-danger">Error loading transaction history</div>';
+      }
+    }
+    
+    // Helper function to display transactions
+    function displayTransactions(transactions) {
+      historyEl.innerHTML = '';
+      
+      if (!transactions || transactions.length === 0) {
+        historyEl.innerHTML = '<div class="text-center text-muted">No transactions yet</div>';
+        return;
+      }
+      
+      // Group transactions by payment_id
+      const groupedTransactions = {};
+      transactions.forEach(tx => {
+        if (!groupedTransactions[tx.payment_id]) { 
+          groupedTransactions[tx.payment_id] = []; 
+        }
+        groupedTransactions[tx.payment_id].push(tx);
+      });
+      
+      // Get unique transactions
+      const uniqueTransactions = Object.values(groupedTransactions).map(group => {
+        // Prefer completed transactions
+        const completedTransactions = group.filter(tx => tx.status === "completed");
+        
+        if (completedTransactions.length > 0) {
+          completedTransactions.sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
+          return completedTransactions[0];
+        }
+        
+        group.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return group[0];
+      });
+      
+      // Sort by date (newest first)
+      uniqueTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      // Render transactions
+      uniqueTransactions.forEach(tx => {
+        const txDate = new Date(tx.created_at);
+        const sgDate = new Date(txDate.getTime() + (8 * 60 * 60 * 1000));
+        const formattedDate = sgDate.toLocaleString('en-SG', { 
+          day: 'numeric', 
+          month: 'short', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit', 
+          hour12: true 
+        });
+        
+        const transactionHtml = `
+          <div class="border-bottom pb-2 mb-2">
+            <div class="d-flex justify-content-between">
+              <strong>${tx.transaction_type === 'top_up' ? 'Top Up' : 'Payment'}</strong>
+              <span class="badge ${tx.status === 'completed' ? 'bg-success' : 'bg-warning'}">${tx.status}</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted">
+              <small>${formattedDate}</small>
+              <span>$${(tx.amount / 100).toFixed(2)}</span>
+            </div>
+          </div>`;
+          
+        historyEl.innerHTML += transactionHtml;
+      });
+    }
+
+    // Process URL parameters
+    function processUrlParameters() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const historyRefreshDelay = 3000;
+      const statusElement = document.getElementById('payment-status');
+
+      if (urlParams.has('success')) {
+        handleSuccessRedirect(statusElement, historyRefreshDelay);
+      } else if (urlParams.has('canceled')) {
+        handleCanceledRedirect(statusElement);
+      } else {
+        // Initial page load - refresh data if user is logged in
+        if (walletId) {
+          console.log("User logged in on initial load, refreshing data.");
+          refreshBalance();
+          loadTransactionHistory();
+        }
+      }
+    }
+    
+    // Handle successful payment redirect
+    function handleSuccessRedirect(statusElement, historyRefreshDelay) {
+      console.log("Processing successful payment redirect...");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      const sessionId = localStorage.getItem('session_id');
+      const processedSessions = JSON.parse(localStorage.getItem('processed_sessions') || '[]');
+      
+      statusElement.innerHTML = '<div class="alert alert-success">Payment successful! A receipt has been sent to your email. Refreshing data...</div>';
+      
+      setTimeout(() => { 
+        if (statusElement.innerHTML.includes('Payment successful')) { 
+          statusElement.innerHTML = ''; 
+        } 
+      }, 8000);
+
+      if (sessionId && !processedSessions.includes(sessionId)) {
+        processedSessions.push(sessionId);
+        localStorage.setItem('processed_sessions', JSON.stringify(processedSessions));
+        
+        console.log(`Calling backend success endpoint for session: ${sessionId}`);
+        
+        fetch(`${PAYMENT_SERVICE_BASE_URL}/success?session_id=${sessionId}`)
+          .then(response => { 
+            if (!response.ok) { 
+              throw new Error(`Error confirming success: ${response.status}`); 
+            } 
+            return response.json(); 
+          })
+          .then(data => { 
+            console.log('Backend success endpoint confirmation:', data); 
+          })
+          .catch(error => { 
+            console.error('Error calling backend success endpoint:', error); 
+            statusElement.innerHTML = '<div class="alert alert-warning">Payment successful, but backend confirmation failed. Data may be delayed.</div>'; 
+          })
+          .finally(() => {
+            scheduleDataRefresh(statusElement, historyRefreshDelay);
+          });
+      } else if (!sessionId) {
+        console.warn("Success redirect, but no session_id found in local storage.");
+        scheduleDataRefresh(statusElement, historyRefreshDelay);
+      } else {
+        console.log(`Session ${sessionId} already processed.`);
+      }
+      
+      localStorage.removeItem('session_id');
+      localStorage.removeItem('topup_amount');
+    }
+    
+    // Handle canceled payment redirect
+    function handleCanceledRedirect(statusElement) {
+      console.log("Processing canceled payment redirect...");
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      statusElement.innerHTML = '<div class="alert alert-warning">Payment was canceled.</div>';
+      
+      setTimeout(() => { 
+        statusElement.innerHTML = ''; 
+      }, 5000);
+      
+      if (walletId) {
+        refreshBalance();
+        loadTransactionHistory();
+      }
+    }
+    
+    // Schedule data refresh after delay
+    function scheduleDataRefresh(statusElement, delay) {
+      console.log(`Refreshing balance and history after ${delay}ms delay.`);
+      
+      setTimeout(() => {
+        console.log("Executing delayed refresh.");
+        
+        if (walletId) {
+          refreshBalance();
+          loadTransactionHistory();
+        }
+        
+        if (statusElement.innerHTML.includes('successful') || statusElement.innerHTML.includes('delayed')) { 
+          statusElement.innerHTML = ''; 
+        }
+      }, delay);
+    }
+
+    // Make functions globally accessible for inline onclick handlers
+    window.fetchWalletBalance = fetchWalletBalance;
+    window.updateBalanceDisplay = updateBalanceDisplay;
+    window.refreshBalance = refreshBalance;
+    window.handleCheckout = handleCheckout;
+    window.loadTransactionHistory = loadTransactionHistory;
+    window.processUrlParameters = processUrlParameters;
+
+    // Initial setup: Disable buttons until auth is confirmed
+    setAuthControlsEnabled(false);
+  </script>
+</body>
+</html>
