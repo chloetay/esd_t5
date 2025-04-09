@@ -33,6 +33,8 @@ paths:
           description: Missing fields or failed validation
         '500':
           description: Internal server error
+        '502':
+          description: Error calling external service
 
   /profile:
     post:
