@@ -28,9 +28,9 @@
           btn.style.display = "none";
           return;
         }
-
+        //localhost:5006/course/${courseId}
         // Load course info
-        fetch(`http://localhost:9000/api/course/course/${courseId}`)
+        http: fetch(``)
           .then((res) => res.json())
           .then((data) => {
             if (data.code === 200) {
