@@ -118,7 +118,7 @@
                   .map((e) => e.course_id);
 
                 // Fetch course names
-                const courseRes = await fetch("http://localhost:5000/course");
+                const courseRes = await fetch("http://localhost:5006/course");
                 const courseData = await courseRes.json();
                 const allCourses = courseData.data.courses;
 

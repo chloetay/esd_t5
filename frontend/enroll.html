@@ -133,7 +133,7 @@
         methods: {
           async loadCourses() {
             try {
-              const res = await fetch("http://localhost:5000/course");
+              const res = await fetch("http://localhost:5006/course");
               const data = await res.json();
               this.courses = data.data.courses;
             } catch (err) {

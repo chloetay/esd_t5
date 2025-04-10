@@ -11,7 +11,7 @@ services:
       dockerfile: Dockerfile
     container_name: course
     ports:
-      - "5000:5000"
+      - "5006:5000"
     environment:
       - dbURL=mysql+mysqlconnector://is213:password@mysql:3306/course
     depends_on:
@@ -101,7 +101,7 @@ services:
       - learning-network
     depends_on:
       - payment-service
-      - ui-service
+      # - ui-service
 
 
   mysql:

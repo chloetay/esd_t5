@@ -98,7 +98,7 @@
       </div>
       <div class="card-body">
         <div id="payment-history">
-          <div class="text-center text-muted">Waiting for user login...</div>
+          <div class="text-center text-muted">Loading Transactions..</div>
         </div>
       </div>
     </div>
@@ -256,7 +256,7 @@
       const formattedBalance = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD'
-      }).format(balance);
+      }).format(balance*100);
       
       balanceEl.textContent = formattedBalance;
     }
@@ -296,7 +296,7 @@
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        const response = await fetch(`${PAYMENT_SERVICE_BASE_URL}/checkout-session`, {
+        const response = await fetch(`${PAYMENT_SERVICE_BASE_URL}/create-checkout-session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -456,7 +456,7 @@
     // Process URL parameters
     function processUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
-      const historyRefreshDelay = 3000;
+      const historyRefreshDelay = 2000;
       const statusElement = document.getElementById('payment-status');
 
       if (urlParams.has('success')) {
@@ -487,7 +487,7 @@
         if (statusElement.innerHTML.includes('Payment successful')) { 
           statusElement.innerHTML = ''; 
         } 
-      }, 8000);
+      }, 4000);
 
       if (sessionId && !processedSessions.includes(sessionId)) {
         processedSessions.push(sessionId);

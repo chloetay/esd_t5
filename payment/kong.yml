@@ -102,6 +102,8 @@ plugins:
         - Content-MD5
         - Date
         - X-Auth-Token
+        - Cache-Control   # <--- ADD THIS LINE
+        - Pragma          # <--- ADD THIS LINE TOO
       exposed_headers:
         - X-Auth-Token
       credentials: true
