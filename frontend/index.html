@@ -397,70 +397,77 @@
       }
     }
     
-    // Helper function to display transactions
-    function displayTransactions(transactions) {
-      historyEl.innerHTML = '';
+// Replace the displayTransactions function with this modified version:
+
+function displayTransactions(transactions) {
+    historyEl.innerHTML = '';
+    
+    if (!transactions || transactions.length === 0) {
+      historyEl.innerHTML = '<div class="text-center text-muted">No transactions yet</div>';
+      return;
+    }
+    
+    // Group transactions by payment_id
+    const groupedTransactions = {};
+    transactions.forEach(tx => {
+      if (!groupedTransactions[tx.payment_id]) { 
+        groupedTransactions[tx.payment_id] = []; 
+      }
+      groupedTransactions[tx.payment_id].push(tx);
+    });
+    
+    // Get unique transactions
+    const uniqueTransactions = Object.values(groupedTransactions).map(group => {
+      // Prefer completed transactions
+      const completedTransactions = group.filter(tx => tx.status === "completed");
       
-      if (!transactions || transactions.length === 0) {
-        historyEl.innerHTML = '<div class="text-center text-muted">No transactions yet</div>';
-        return;
+      if (completedTransactions.length > 0) {
+        completedTransactions.sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
+        return completedTransactions[0];
       }
       
-      // Group transactions by payment_id
-      const groupedTransactions = {};
-      transactions.forEach(tx => {
-        if (!groupedTransactions[tx.payment_id]) { 
-          groupedTransactions[tx.payment_id] = []; 
-        }
-        groupedTransactions[tx.payment_id].push(tx);
+      group.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      return group[0];
+    });
+    
+    // Sort by date (newest first)
+    uniqueTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    // Render transactions
+    uniqueTransactions.forEach(tx => {
+      const txDate = new Date(tx.created_at);
+      const sgDate = new Date(txDate.getTime() + (8 * 60 * 60 * 1000));
+      const formattedDate = sgDate.toLocaleString('en-SG', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit', 
+        hour12: true 
       });
       
-      // Get unique transactions
-      const uniqueTransactions = Object.values(groupedTransactions).map(group => {
-        // Prefer completed transactions
-        const completedTransactions = group.filter(tx => tx.status === "completed");
-        
-        if (completedTransactions.length > 0) {
-          completedTransactions.sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
-          return completedTransactions[0];
-        }
-        
-        group.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        return group[0];
-      });
+      // Determine display status - convert pending to failed
+      const displayStatus = tx.status === 'pending' ? 'failed' : tx.status;
       
-      // Sort by date (newest first)
-      uniqueTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      // Set badge color based on display status
+      const badgeClass = displayStatus === 'completed' ? 'bg-success' : 'bg-danger';
       
-      // Render transactions
-      uniqueTransactions.forEach(tx => {
-        const txDate = new Date(tx.created_at);
-        const sgDate = new Date(txDate.getTime() + (8 * 60 * 60 * 1000));
-        const formattedDate = sgDate.toLocaleString('en-SG', { 
-          day: 'numeric', 
-          month: 'short', 
-          year: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit', 
-          second: '2-digit', 
-          hour12: true 
-        });
+      const transactionHtml = `
+        <div class="border-bottom pb-2 mb-2">
+          <div class="d-flex justify-content-between">
+            <strong>${tx.transaction_type === 'top_up' ? 'Top Up' : 'Payment'}</strong>
+            <span class="badge ${badgeClass}">${displayStatus}</span>
+          </div>
+          <div class="d-flex justify-content-between text-muted">
+            <small>${formattedDate}</small>
+            <span>$${(tx.amount / 100).toFixed(2)}</span>
+          </div>
+        </div>`;
         
-        const transactionHtml = `
-          <div class="border-bottom pb-2 mb-2">
-            <div class="d-flex justify-content-between">
-              <strong>${tx.transaction_type === 'top_up' ? 'Top Up' : 'Payment'}</strong>
-              <span class="badge ${tx.status === 'completed' ? 'bg-success' : 'bg-warning'}">${tx.status}</span>
-            </div>
-            <div class="d-flex justify-content-between text-muted">
-              <small>${formattedDate}</small>
-              <span>$${(tx.amount / 100).toFixed(2)}</span>
-            </div>
-          </div>`;
-          
-        historyEl.innerHTML += transactionHtml;
-      });
-    }
+      historyEl.innerHTML += transactionHtml;
+    });
+  }
 
     // Process URL parameters
     function processUrlParameters() {
@@ -490,14 +497,8 @@
       const sessionId = localStorage.getItem('session_id');
       const processedSessions = JSON.parse(localStorage.getItem('processed_sessions') || '[]');
       
-      statusElement.innerHTML = '<div class="alert alert-success">Payment successful! A receipt has been sent to your email. Refreshing data...</div>';
+      statusElement.innerHTML = '<div class="alert alert-success">Payment successful! Refreshing data...</div>';
       
-      setTimeout(() => { 
-        if (statusElement.innerHTML.includes('Payment successful')) { 
-          statusElement.innerHTML = ''; 
-        } 
-      }, 4000);
-
       if (sessionId && !processedSessions.includes(sessionId)) {
         processedSessions.push(sessionId);
         localStorage.setItem('processed_sessions', JSON.stringify(processedSessions));
@@ -516,16 +517,28 @@
           })
           .catch(error => { 
             console.error('Error calling backend success endpoint:', error); 
-            statusElement.innerHTML = '<div class="alert alert-warning">Payment successful, but backend confirmation failed. Data may be delayed.</div>'; 
-          })
-          .finally(() => {
-            scheduleDataRefresh(statusElement, historyRefreshDelay);
           });
-      } else if (!sessionId) {
-        console.warn("Success redirect, but no session_id found in local storage.");
-        scheduleDataRefresh(statusElement, historyRefreshDelay);
-      } else {
-        console.log(`Session ${sessionId} already processed.`);
+      }
+      
+      // Immediately refresh the wallet balance
+      if (walletId) {
+        refreshBalance();
+        
+        // Clear the history display and show loading message
+        historyEl.innerHTML = '<div class="text-center"><div class="loading-spinner"></div> Updating transaction history...</div>';
+        
+        // Delay the transaction history refresh by 3-4 seconds
+        setTimeout(() => {
+          console.log("Loading transaction history after delay.");
+          loadTransactionHistory();
+          
+          // Clear the success message after history is loaded
+          setTimeout(() => {
+            if (statusElement.innerHTML.includes('successful')) { 
+              statusElement.innerHTML = ''; 
+            }
+          }, 1000);
+        }, 3500); // 3.5 seconds delay
       }
       
       localStorage.removeItem('session_id');
@@ -544,6 +557,7 @@
       }, 5000);
       
       if (walletId) {
+        // Immediately refresh both balance and history on cancel
         refreshBalance();
         loadTransactionHistory();
       }
