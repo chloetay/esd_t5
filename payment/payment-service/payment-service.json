@@ -1,0 +1,368 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Payment Microservice",
+    "description": "API for handling payments and wallet top-ups via Stripe",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Default server"
+    }
+  ],
+  "components": {
+    "schemas": {
+      "PaymentIntentRequest": {
+        "type": "object",
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Amount in smallest currency unit (e.g., cents)"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code (e.g., usd)"
+          },
+          "wallet_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "User wallet identifier"
+          },
+          "wallet_password": {
+            "type": "string",
+            "nullable": true,
+            "description": "Password for the wallet"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true,
+            "description": "Additional metadata for the payment"
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "properties": {
+          "client_secret": {
+            "type": "string",
+            "description": "Stripe client secret for the payment intent"
+          },
+          "payment_id": {
+            "type": "string",
+            "description": "Internal payment identifier"
+          }
+        }
+      },
+      "CheckoutResponse": {
+        "type": "object",
+        "properties": {
+          "checkout_url": {
+            "type": "string",
+            "description": "URL to redirect the user to Stripe Checkout"
+          },
+          "session_id": {
+            "type": "string",
+            "description": "Stripe Checkout Session ID"
+          },
+          "payment_id": {
+            "type": "string",
+            "description": "Internal payment identifier"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          }
+        }
+      },
+      "PaymentRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Internal payment identifier"
+          },
+          "stripe_payment_id": {
+            "type": "string",
+            "description": "Stripe payment identifier"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in smallest currency unit"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Three-letter currency code"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the payment"
+          },
+          "wallet_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "User wallet identifier"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the payment was created"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the payment was last updated"
+          },
+          "payment_method_type": {
+            "type": "string",
+            "nullable": true,
+            "description": "Type of payment method used"
+          },
+          "webhook_received_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the Stripe webhook was received"
+          },
+          "stripe_webhook_received": {
+            "type": "boolean",
+            "description": "Whether a Stripe webhook was received for this payment"
+          },
+          "payment_metadata": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Additional metadata for the payment"
+          }
+        }
+      },
+      "UserPaymentSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Internal payment identifier"
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Amount in smallest currency unit"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Three-letter currency code"
+          },
+          "status": {
+            "type": "string",
+            "description": "Current status of the payment"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the payment was created"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check endpoint",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Service health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/create-checkout-session": {
+      "post": {
+        "summary": "Create a Stripe Checkout session",
+        "operationId": "createCheckout",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentIntentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Stripe error"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/success": {
+      "get": {
+        "summary": "Handle successful checkout redirect",
+        "operationId": "success",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Stripe Checkout Session ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "payment_id": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "already_processed": {
+                      "type": "boolean",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error processing success callback"
+          }
+        }
+      }
+    },
+    "/cancel": {
+      "get": {
+        "summary": "Handle cancelled checkout",
+        "operationId": "cancel",
+        "responses": {
+          "200": {
+            "description": "Cancellation response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "cancelled"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhook": {
+      "post": {
+        "summary": "Handle Stripe webhook events",
+        "operationId": "stripeWebhook",
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid signature"
+          },
+          "500": {
+            "description": "Error processing webhook"
+          }
+        }
+      }
+    },
+
+    "/webhook-debug": {
+      "post": {
+        "summary": "Debug endpoint for webhook data",
+        "operationId": "webhookDebug",
+        "responses": {
+          "200": {
+            "description": "Webhook data logged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "logged"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-apispace": {
+    "defaultLayout": "sidebar",
+    "defaultPathItem": "",
+    "theme": {
+      "colors": {
+        "primary": "#4F46E5",
+        "success": "#22C55E",
+        "warning": "#F59E0B",
+        "danger": "#EF4444",
+        "info": "#3B82F6"
+      }
+    }
+  }
+}

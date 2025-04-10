@@ -1,0 +1,358 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "Transaction Logs Microservice",
+      "description": "API for recording and retrieving transaction logs",
+      "version": "1.0.0"
+    },
+    "servers": [
+      {
+        "url": "/",
+        "description": "Default server"
+      }
+    ],
+    "components": {
+      "schemas": {
+        "TransactionLogCreate": {
+          "type": "object",
+          "required": [
+            "payment_id",
+            "amount",
+            "status"
+          ],
+          "properties": {
+            "payment_id": {
+              "type": "string",
+              "description": "Unique identifier for the payment"
+            },
+            "stripe_payment_id": {
+              "type": "string",
+              "nullable": true,
+              "description": "Stripe payment identifier"
+            },
+            "wallet_id": {
+              "type": "string",
+              "nullable": true,
+              "description": "User wallet identifier"
+            },
+            "amount": {
+              "type": "integer",
+              "description": "Transaction amount in cents/smallest currency unit"
+            },
+            "currency": {
+              "type": "string",
+              "default": "usd",
+              "description": "Three-letter currency code"
+            },
+            "status": {
+              "type": "string",
+              "description": "Current status of the transaction"
+            },
+            "transaction_type": {
+              "type": "string",
+              "default": "top_up",
+              "nullable": true,
+              "description": "Type of transaction"
+            },
+            "payment_method_type": {
+              "type": "string",
+              "nullable": true,
+              "description": "Type of payment method used"
+            },
+            "log_metadata": {
+              "type": "string",
+              "nullable": true,
+              "description": "JSON string containing additional metadata"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true,
+              "description": "When the transaction was created"
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true,
+              "description": "When the transaction was completed"
+            }
+          }
+        },
+        "TransactionLogResponse": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for the transaction log"
+            },
+            "payment_id": {
+              "type": "string",
+              "description": "Unique identifier for the payment"
+            },
+            "amount": {
+              "type": "integer",
+              "description": "Transaction amount in cents/smallest currency unit"
+            },
+            "currency": {
+              "type": "string",
+              "description": "Three-letter currency code"
+            },
+            "status": {
+              "type": "string",
+              "description": "Current status of the transaction"
+            },
+            "transaction_type": {
+              "type": "string",
+              "description": "Type of transaction"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time",
+              "description": "When the transaction was created"
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true,
+              "description": "When the transaction was completed"
+            }
+          }
+        },
+        "HealthResponse": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "example": "ok"
+            },
+            "service": {
+              "type": "string",
+              "example": "transaction-logs"
+            }
+          }
+        },
+        "DebugResponse": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "integer",
+              "description": "Number of logs returned"
+            },
+            "db_url_status": {
+              "type": "string",
+              "description": "Database connection status"
+            },
+            "formatted_logs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/TransactionLogResponse"
+              },
+              "description": "Formatted transaction logs"
+            }
+          }
+        }
+      }
+    },
+    "paths": {
+      "/health": {
+        "get": {
+          "summary": "Health check endpoint",
+          "operationId": "healthCheck",
+          "responses": {
+            "200": {
+              "description": "Service health status",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HealthResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/logs": {
+        "post": {
+          "summary": "Create a new transaction log",
+          "operationId": "createDirectLog",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionLogCreate"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Transaction log created successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TransactionLogResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/": {
+        "get": {
+          "summary": "List all transaction logs",
+          "operationId": "listTransactionLogs",
+          "responses": {
+            "200": {
+              "description": "List of all transaction logs",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TransactionLogResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/{log_id}": {
+        "get": {
+          "summary": "Get a specific transaction log by ID",
+          "operationId": "getTransactionLog",
+          "parameters": [
+            {
+              "name": "log_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Transaction log ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Transaction log details",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TransactionLogResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Transaction log not found"
+            }
+          }
+        }
+      },
+      "/user/{wallet_id}": {
+        "get": {
+          "summary": "List transaction logs for a specific wallet",
+          "operationId": "listWalletTransactionLogs",
+          "parameters": [
+            {
+              "name": "wallet_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Wallet ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of transaction logs for the specified wallet",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TransactionLogResponse"
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Error fetching logs"
+            }
+          }
+        }
+      },
+      "/api/transaction-logs/user/{wallet_id}": {
+        "get": {
+          "summary": "List transaction logs for a specific wallet (full path)",
+          "operationId": "listWalletTransactionLogsFullPath",
+          "parameters": [
+            {
+              "name": "wallet_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              },
+              "description": "Wallet ID"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of transaction logs for the specified wallet",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TransactionLogResponse"
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Error fetching logs"
+            }
+          }
+        }
+      },
+      "/debug/logs": {
+        "get": {
+          "summary": "Debugging endpoint to view all logs with additional info",
+          "operationId": "debugLogs",
+          "responses": {
+            "200": {
+              "description": "Debug information with all logs",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DebugResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "x-apispace": {
+      "defaultLayout": "sidebar",
+      "defaultPathItem": "",
+      "theme": {
+        "colors": {
+          "primary": "#4F46E5",
+          "success": "#22C55E",
+          "warning": "#F59E0B",
+          "danger": "#EF4444",
+          "info": "#3B82F6"
+        }
+      }
+    }
+  }
