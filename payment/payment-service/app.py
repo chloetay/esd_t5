@@ -262,7 +262,7 @@ async def update_wallet_balance(payment_record, amount_in_cents):
         
         logger.info(f"Using wallet_id: {wallet_id} and email: {email}")
         
-        amount_in_wallet_format = amount_in_cents / 10000
+        amount_in_wallet_format = amount_in_cents / 100
         logger.info(f"Converted amount: {amount_in_cents} cents -> {amount_in_wallet_format} wallet format")
         
         wallet_update_payload = {

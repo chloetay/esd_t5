@@ -256,7 +256,7 @@
       const formattedBalance = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD'
-      }).format(balance*100);
+      }).format(balance);
       
       balanceEl.textContent = formattedBalance;
     }
