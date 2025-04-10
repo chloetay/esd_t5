@@ -17,6 +17,14 @@
   </head>
   <body class="bg-gray-50 min-h-screen p-6">
     <div id="app" class="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-8">
+      <div class="absolute top-4 right-4">
+        <button
+          @click="signOut"
+          class="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
+        >
+          🔒 Sign Out
+        </button>
+      </div>
       <h2 class="text-3xl font-semibold text-gray-800 mb-4">👤 User Profile</h2>
 
       <div v-if="loading" class="text-gray-500">Loading...</div>
@@ -142,10 +150,21 @@
           },
           topUp() {
             window.location.href = "./index.html";
-          }
+          }, 
+          signOut() {
+            auth
+							.signOut()
+							.then(() => {
+								localStorage.removeItem("walletPassword");
+								localStorage.removeItem("userId");
+								window.location.href = "../LogIn/login.html";
+							})
+							.catch((error) => {
+								this.message = "Failed to sign out. Please try again.";
+								this.messageType = "error";
+							});
         },
-      });
-
+      }});
       app.mount("#app");
     </script>
   </body>
