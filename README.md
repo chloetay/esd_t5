@@ -12,7 +12,6 @@ Enrolled users can begin a course, resume progress, or complete it at their own 
 4.	Complete Assessments:
 After completing courses, users can take assessments linked to each course to reinforce their learning. 
 
-
 ## Installation
 1. Builds and starts Docker containers as defined in the docker-compose.yml file:
     ```sh
