@@ -397,86 +397,84 @@
       }
     }
     
-// Replace the displayTransactions function with this modified version:
-
-function displayTransactions(transactions) {
-    historyEl.innerHTML = '';
-    
-    if (!transactions || transactions.length === 0) {
-      historyEl.innerHTML = '<div class="text-center text-muted">No transactions yet</div>';
-      return;
-    }
-    
-    // Group transactions by payment_id
-    const groupedTransactions = {};
-    transactions.forEach(tx => {
-      if (!groupedTransactions[tx.payment_id]) { 
-        groupedTransactions[tx.payment_id] = []; 
-      }
-      groupedTransactions[tx.payment_id].push(tx);
-    });
-    
-    // Get unique transactions
-    const uniqueTransactions = Object.values(groupedTransactions).map(group => {
-      // Prefer completed transactions
-      const completedTransactions = group.filter(tx => tx.status === "completed");
+    // Helper function to display transactions
+    function displayTransactions(transactions) {
+      historyEl.innerHTML = '';
       
-      if (completedTransactions.length > 0) {
-        completedTransactions.sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
-        return completedTransactions[0];
+      if (!transactions || transactions.length === 0) {
+        historyEl.innerHTML = '<div class="text-center text-muted">No transactions yet</div>';
+        return;
       }
       
-      group.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      return group[0];
-    });
-    
-    // Sort by date (newest first)
-    uniqueTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
-    // Render transactions
-    uniqueTransactions.forEach(tx => {
-      const txDate = new Date(tx.created_at);
-      const sgDate = new Date(txDate.getTime() + (8 * 60 * 60 * 1000));
-      const formattedDate = sgDate.toLocaleString('en-SG', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit', 
-        hour12: true 
+      // Group transactions by payment_id
+      const groupedTransactions = {};
+      transactions.forEach(tx => {
+        if (!groupedTransactions[tx.payment_id]) { 
+          groupedTransactions[tx.payment_id] = []; 
+        }
+        groupedTransactions[tx.payment_id].push(tx);
       });
       
-      // Determine display status - convert pending to failed
-      const displayStatus = tx.status === 'pending' ? 'failed' : tx.status;
-      
-      // Set badge color based on display status
-      const badgeClass = displayStatus === 'completed' ? 'bg-success' : 'bg-danger';
-      
-      const transactionHtml = `
-        <div class="border-bottom pb-2 mb-2">
-          <div class="d-flex justify-content-between">
-            <strong>${tx.transaction_type === 'top_up' ? 'Top Up' : 'Payment'}</strong>
-            <span class="badge ${badgeClass}">${displayStatus}</span>
-          </div>
-          <div class="d-flex justify-content-between text-muted">
-            <small>${formattedDate}</small>
-            <span>$${(tx.amount / 100).toFixed(2)}</span>
-          </div>
-        </div>`;
+      // Get unique transactions
+      const uniqueTransactions = Object.values(groupedTransactions).map(group => {
+        // Prefer completed transactions
+        const completedTransactions = group.filter(tx => tx.status === "completed");
         
-      historyEl.innerHTML += transactionHtml;
-    });
-  }
+        if (completedTransactions.length > 0) {
+          completedTransactions.sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
+          return completedTransactions[0];
+        }
+        
+        group.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return group[0];
+      });
+      
+      // Sort by date (newest first)
+      uniqueTransactions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      // Render transactions
+      uniqueTransactions.forEach(tx => {
+        const txDate = new Date(tx.created_at);
+        const sgDate = new Date(txDate.getTime() + (8 * 60 * 60 * 1000));
+        const formattedDate = sgDate.toLocaleString('en-SG', { 
+          day: 'numeric', 
+          month: 'short', 
+          year: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit', 
+          hour12: true 
+        });
+        
+        // Determine display status - convert pending to failed
+        const displayStatus = tx.status === 'pending' ? 'failed' : tx.status;
+        
+        // Set badge color based on display status
+        const badgeClass = displayStatus === 'completed' ? 'bg-success' : 'bg-danger';
+        
+        const transactionHtml = `
+          <div class="border-bottom pb-2 mb-2">
+            <div class="d-flex justify-content-between">
+              <strong>${tx.transaction_type === 'top_up' ? 'Top Up' : 'Payment'}</strong>
+              <span class="badge ${badgeClass}">${displayStatus}</span>
+            </div>
+            <div class="d-flex justify-content-between text-muted">
+              <small>${formattedDate}</small>
+              <span>$${(tx.amount / 100).toFixed(2)}</span>
+            </div>
+          </div>`;
+          
+        historyEl.innerHTML += transactionHtml;
+      });
+    }
 
     // Process URL parameters
     function processUrlParameters() {
       const urlParams = new URLSearchParams(window.location.search);
-      const historyRefreshDelay = 2000;
       const statusElement = document.getElementById('payment-status');
 
       if (urlParams.has('success')) {
-        handleSuccessRedirect(statusElement, historyRefreshDelay);
+        handleSuccessRedirect(statusElement);
       } else if (urlParams.has('canceled')) {
         handleCanceledRedirect(statusElement);
       } else {
@@ -490,7 +488,7 @@ function displayTransactions(transactions) {
     }
     
     // Handle successful payment redirect
-    function handleSuccessRedirect(statusElement, historyRefreshDelay) {
+    function handleSuccessRedirect(statusElement) {
       console.log("Processing successful payment redirect...");
       window.history.replaceState({}, document.title, window.location.pathname);
       
@@ -520,16 +518,20 @@ function displayTransactions(transactions) {
           });
       }
       
-      // Immediately refresh the wallet balance
+      // Immediately refresh the wallet balance with a small delay of 1 second
       if (walletId) {
-        refreshBalance();
+        // Updated: Refresh wallet balance after just 1 second
+        setTimeout(() => {
+          console.log("Refreshing wallet balance after 1 second delay");
+          refreshBalance();
+        }, 1000);
         
         // Clear the history display and show loading message
         historyEl.innerHTML = '<div class="text-center"><div class="loading-spinner"></div> Updating transaction history...</div>';
         
-        // Delay the transaction history refresh by 3-4 seconds
+        // Updated: Delay the transaction history refresh to 2 seconds (1 second after wallet refresh)
         setTimeout(() => {
-          console.log("Loading transaction history after delay.");
+          console.log("Loading transaction history after 3 second delay");
           loadTransactionHistory();
           
           // Clear the success message after history is loaded
@@ -537,8 +539,8 @@ function displayTransactions(transactions) {
             if (statusElement.innerHTML.includes('successful')) { 
               statusElement.innerHTML = ''; 
             }
-          }, 1000);
-        }, 3500); // 3.5 seconds delay
+          }, 4000);
+        }, 8000);
       }
       
       localStorage.removeItem('session_id');
@@ -561,24 +563,6 @@ function displayTransactions(transactions) {
         refreshBalance();
         loadTransactionHistory();
       }
-    }
-    
-    // Schedule data refresh after delay
-    function scheduleDataRefresh(statusElement, delay) {
-      console.log(`Refreshing balance and history after ${delay}ms delay.`);
-      
-      setTimeout(() => {
-        console.log("Executing delayed refresh.");
-        
-        if (walletId) {
-          refreshBalance();
-          loadTransactionHistory();
-        }
-        
-        if (statusElement.innerHTML.includes('successful') || statusElement.innerHTML.includes('delayed')) { 
-          statusElement.innerHTML = ''; 
-        }
-      }, delay);
     }
 
     // Make functions globally accessible for inline onclick handlers

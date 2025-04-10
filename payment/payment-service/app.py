@@ -344,15 +344,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add route to serve the HTML test page
-@app.get("/", response_class=HTMLResponse)
-async def get_payment_page():
-    try:
-        with open("test.html", "r") as f:
-            html_content = f.read()
-        return html_content
-    except FileNotFoundError:
-        return HTMLResponse(content="<h1>Payment test page not found</h1>", status_code=404)
+# # Add route to serve the HTML test page
+# @app.get("/", response_class=HTMLResponse)
+# async def get_payment_page():
+#     try:
+#         with open("test.html", "r") as f:
+#             html_content = f.read()
+#         return html_content
+#     except FileNotFoundError:
+#         return HTMLResponse(content="<h1>Payment test page not found</h1>", status_code=404)
 
 @app.get("/health")
 async def health_check():
@@ -635,54 +635,54 @@ async def stripe_webhook(request: Request):
         logger.error(f"Error handling webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Error processing webhook")
 
-@app.get("/payments/{payment_id}")
-async def get_payment(payment_id: str):
-    """
-    Retrieve payment details by ID.
-    """
-    payment_record = payment_records.get(payment_id)
+# @app.get("/payments/{payment_id}")
+# async def get_payment(payment_id: str):
+#     """
+#     Retrieve payment details by ID.
+#     """
+#     payment_record = payment_records.get(payment_id)
     
-    if not payment_record:
-        # Check if this is a Stripe session ID
-        if payment_id.startswith("cs_"):
-            payment_record = payment_records.get(payment_id)
+#     if not payment_record:
+#         # Check if this is a Stripe session ID
+#         if payment_id.startswith("cs_"):
+#             payment_record = payment_records.get(payment_id)
     
-    if not payment_record:
-        raise HTTPException(status_code=404, detail="Payment not found")
+#     if not payment_record:
+#         raise HTTPException(status_code=404, detail="Payment not found")
     
-    return payment_record.to_dict()
+#     return payment_record.to_dict()
 
-@app.get("/payments/user/{wallet_id}")
-async def list_user_payments(wallet_id: str):
-    """
-    Return payment history filtered by wallet_id.
-    """
-    user_payments = []
-    for payment in payment_records.values():
-        if isinstance(payment, PaymentRecord) and payment.wallet_id == wallet_id:
-            user_payments.append({
-                "id": payment.id,
-                "amount": payment.amount,
-                "currency": payment.currency,
-                "status": payment.status,
-                "created_at": payment.created_at.isoformat(),
-            })
+# @app.get("/payments/user/{wallet_id}")
+# async def list_user_payments(wallet_id: str):
+#     """
+#     Return payment history filtered by wallet_id.
+#     """
+#     user_payments = []
+#     for payment in payment_records.values():
+#         if isinstance(payment, PaymentRecord) and payment.wallet_id == wallet_id:
+#             user_payments.append({
+#                 "id": payment.id,
+#                 "amount": payment.amount,
+#                 "currency": payment.currency,
+#                 "status": payment.status,
+#                 "created_at": payment.created_at.isoformat(),
+#             })
     
-    # Sort by created_at (most recent first)
-    user_payments.sort(key=lambda x: x["created_at"], reverse=True)
-    return user_payments
+#     # Sort by created_at (most recent first)
+#     user_payments.sort(key=lambda x: x["created_at"], reverse=True)
+#     return user_payments
 
-@app.get("/payments")
-async def list_payments():
-    """List all payments"""
-    result = []
-    # Filter out duplicate references (we have both payment_id and stripe_id as keys)
-    unique_payments = {}
-    for payment in payment_records.values():
-        if isinstance(payment, PaymentRecord) and payment.id not in unique_payments:
-            unique_payments[payment.id] = payment.to_dict()
+# @app.get("/payments")
+# async def list_payments():
+#     """List all payments"""
+#     result = []
+#     # Filter out duplicate references (we have both payment_id and stripe_id as keys)
+#     unique_payments = {}
+#     for payment in payment_records.values():
+#         if isinstance(payment, PaymentRecord) and payment.id not in unique_payments:
+#             unique_payments[payment.id] = payment.to_dict()
     
-    return list(unique_payments.values())
+#     return list(unique_payments.values())
 
 @app.post("/webhook-debug")
 async def webhook_debug(request: Request):
