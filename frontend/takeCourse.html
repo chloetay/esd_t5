@@ -69,6 +69,10 @@
               alert("An error occurred.");
             });
         });
+
+        document.getElementById("back-btn").addEventListener("click", () => {
+          window.location.href = "profile.html";
+        });
       });
     </script>
   </head>
@@ -89,6 +93,12 @@
         class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
       >
         Take Course
+      </button>
+      <button
+        id="back-btn"
+        class="mt-2 px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition"
+      >
+        Back to Profile
       </button>
     </div>
   </body>
