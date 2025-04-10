@@ -30,7 +30,7 @@
         }
 
         // Load course info
-        fetch(`http://localhost:5006/course/${courseId}`)
+        fetch(`http://localhost:9000/api/course/course/${courseId}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.code === 200) {

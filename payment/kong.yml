@@ -83,6 +83,15 @@ services:
         strip_path: true
         path_handling: v1
 
+  - name: course-service
+    url: http://course:5000
+    routes:
+      - name: course-route
+        paths:
+          - /api/course
+        strip_path: true
+        path_handling: v1
+
 plugins:
   - name: cors
     config:
@@ -102,8 +111,8 @@ plugins:
         - Content-MD5
         - Date
         - X-Auth-Token
-        - Cache-Control   # <--- ADD THIS LINE
-        - Pragma          # <--- ADD THIS LINE TOO
+        - Cache-Control # <--- ADD THIS LINE
+        - Pragma # <--- ADD THIS LINE TOO
       exposed_headers:
         - X-Auth-Token
       credentials: true

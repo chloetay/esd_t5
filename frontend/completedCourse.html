@@ -42,7 +42,7 @@
         }
 
         // 1. Load course info
-        fetch(`http://localhost:5000/course/${courseId}`)
+        fetch(`http://localhost:9000/api/course/course/${courseId}`)
           .then((res) => res.json())
           .then((data) => {
             if (data.code === 200) {
@@ -58,7 +58,7 @@
           });
 
         // 2. Load course logs
-        fetch(`http://localhost:5003/courseLogs/${courseId}/${userId}`)
+        fetch(`http://localhost:9000/api/courseLogs/${courseId}/${userId}`)
           .then((res) => res.json())
           .then((data) => {
             const completed = data.data?.completedItems || [];
@@ -110,21 +110,30 @@
         <h3 class="text-lg font-semibold text-gray-700 mb-2">
           Lessons Completed
         </h3>
-        <ul id="lessons-list" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+        <ul
+          id="lessons-list"
+          class="list-disc list-inside text-gray-600 space-y-1"
+        ></ul>
       </div>
 
       <div>
         <h3 class="text-lg font-semibold text-gray-700 mb-2">
           Quizzes Completed
         </h3>
-        <ul id="quizzes-list" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+        <ul
+          id="quizzes-list"
+          class="list-disc list-inside text-gray-600 space-y-1"
+        ></ul>
       </div>
 
       <div>
         <h3 class="text-lg font-semibold text-gray-700 mb-2">
           Notes Completed
         </h3>
-        <ul id="notes-list" class="list-disc list-inside text-gray-600 space-y-1"></ul>
+        <ul
+          id="notes-list"
+          class="list-disc list-inside text-gray-600 space-y-1"
+        ></ul>
       </div>
 
       <div class="text-center">
