@@ -30,6 +30,8 @@ After completing courses, users can take assessments linked to each course to re
     ```
 4. Open your browser and go to: http://localhost:8080/login.html
 
+<i>*Contact @jbongg on telegram in the case that Outsystems microservices are inaccessible</i>
+
 
 ## Screenshots 
 ### **Login Page**
